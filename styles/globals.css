@@ -4,6 +4,24 @@
 @custom-variant dark (&:is(.dark *));
 
 @font-face {
+  font-family: "Red Hat Display";
+  src: url("/fonts/RedHatDisplay-Variable.ttf") format("truetype-variations"),
+       url("/fonts/RedHatDisplay-Variable.ttf") format("truetype");
+  font-weight: 300 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Red Hat Display";
+  src: url("/fonts/RedHatDisplay-VariableItalic.ttf") format("truetype-variations"),
+       url("/fonts/RedHatDisplay-VariableItalic.ttf") format("truetype");
+  font-weight: 300 900;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
   font-family: "FUNGIS";
   src: url("/fonts/FUNGIS Regular.ttf") format("truetype");
   font-weight: 400;
@@ -28,10 +46,119 @@
 }
 
 @theme {
-  --font-sans: "FUNGIS", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Red Hat Display", "FUNGIS", ui-sans-serif, system-ui, sans-serif;
+  --font-redhat: "Red Hat Display", sans-serif;
+  --font-fungis: "FUNGIS", sans-serif;
   --font-mono: ui-monospace, monospace;
+
+  /* ── Custom dark-green palette ── */
+  --color-eco-50: #e8f5e9;
+  --color-eco-100: #c8e6c9;
+  --color-eco-200: #a5d6a7;
+  --color-eco-300: #81c784;
+  --color-eco-400: #66bb6a;
+  --color-eco-500: #22c55e;
+  --color-eco-600: #16a34a;
+  --color-eco-700: #15803d;
+  --color-eco-800: #166534;
+  --color-eco-900: #14532d;
+
+  --color-surface-950: #030706;
+  --color-surface-900: #050e08;
+  --color-surface-800: #0a1a10;
+  --color-surface-700: #0f261a;
+  --color-surface-600: #143322;
 }
 
 body {
   font-family: var(--font-sans);
+}
+
+/* ── Dark theme overrides ── */
+.dark {
+  color-scheme: dark;
+
+  /* Deep black backgrounds with very subtle green tint */
+  --heroui-background: 5 10 8;               /* #050a08 */
+  --heroui-foreground-50: 8 15 10;
+  --heroui-foreground-100: 12 22 16;
+  --heroui-foreground-200: 30 50 38;
+  --heroui-foreground-300: 60 85 68;
+  --heroui-foreground-400: 110 140 120;
+  --heroui-foreground-500: 150 175 158;
+  --heroui-foreground-600: 180 200 186;
+  --heroui-foreground-700: 205 220 210;
+  --heroui-foreground-800: 225 238 228;
+  --heroui-foreground-900: 240 250 242;
+  --heroui-foreground: 240 250 242;
+
+  /* Content areas */
+  --heroui-content1: 8 18 12;
+  --heroui-content2: 10 22 14;
+  --heroui-content3: 14 28 18;
+  --heroui-content4: 18 34 22;
+
+  /* Green-tinted dividers */
+  --heroui-divider: 20 40 28;
+
+  /* Primary = vibrant eco-green */
+  --heroui-primary-50: 8 30 16;
+  --heroui-primary-100: 14 50 28;
+  --heroui-primary-200: 22 80 44;
+  --heroui-primary-300: 30 120 60;
+  --heroui-primary-400: 34 160 74;
+  --heroui-primary-500: 34 197 94;                /* #22c55e */
+  --heroui-primary-600: 60 210 115;
+  --heroui-primary-700: 100 225 150;
+  --heroui-primary-800: 160 240 190;
+  --heroui-primary-900: 210 250 225;
+  --heroui-primary: 34 197 94;
+  --heroui-primary-foreground: 5 10 8;
+
+  /* Default chip / button */
+  --heroui-default-50: 8 15 10;
+  --heroui-default-100: 12 24 16;
+  --heroui-default-200: 20 38 26;
+  --heroui-default-300: 35 58 42;
+  --heroui-default-400: 60 90 68;
+  --heroui-default-500: 90 120 98;
+  --heroui-default-600: 140 165 148;
+  --heroui-default-700: 180 200 186;
+  --heroui-default-800: 210 228 216;
+  --heroui-default-900: 235 245 238;
+  --heroui-default: 20 38 26;
+  --heroui-default-foreground: 235 245 238;
+
+  /* Success = bright green */
+  --heroui-success: 34 197 94;
+  --heroui-success-foreground: 5 10 8;
+
+  /* Focus ring */
+  --heroui-focus: 34 197 94;
+}
+
+/* Navbar glass effect with dark-green tint */
+.dark nav {
+  border-color: rgba(34, 197, 94, 0.08);
+}
+
+/* Subtle green glow on focus-visible */
+.dark *:focus-visible {
+  outline-color: rgba(34, 197, 94, 0.5);
+}
+
+/* Scrollbar styling */
+.dark ::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.dark ::-webkit-scrollbar-track {
+  background: #050a08;
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: #14532d;
+  border-radius: 3px;
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #166534;
 }

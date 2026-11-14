@@ -10,7 +10,7 @@ export type { MapMarkerData, MapClientProps } from "./map-client";
 
 export default function Map(props: MapClientProps) {
   return (
-    <div className="relative w-full h-full rounded-xl overflow-hidden">
+    <div className="relative w-full h-full rounded-xl overflow-hidden border border-emerald-950/40 shadow-[0_4px_24px_rgba(0,0,0,0.6)]">
       <MapClient {...props} />
     </div>
   );

@@ -11,19 +11,22 @@ export const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   return (
-    <nav className="sticky top-0 z-40 w-full border-b border-separator bg-background/70 backdrop-blur-lg">
+    <nav className="sticky top-0 z-40 w-full border-b border-emerald-950/40 bg-[#050a08]/80 backdrop-blur-lg">
       <header className="mx-auto flex h-16 max-w-[1280px] items-center justify-between gap-4 px-6">
         <div className="flex items-center gap-4">
-          <NextLink className="flex items-center gap-1" href="/">
-            <p className="font-bold text-inherit">Crop Catcher</p>
+          <NextLink className="flex items-center gap-2 group" href="/">
+            <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(34,197,94,0.6)] group-hover:scale-125 transition-transform" />
+            <p className="font-bold tracking-tight text-white group-hover:text-emerald-400 transition-colors">
+              Crop Catcher
+            </p>
           </NextLink>
-          <ul className="hidden lg:flex gap-4 ml-2">
+          <ul className="hidden lg:flex gap-4 ml-4">
             {siteConfig.navItems.map((item) => (
               <li key={item.href}>
                 <NextLink
                   className={clsx(
-                    "text-foreground hover:text-accent transition-colors",
-                    "data-[active=true]:text-accent data-[active=true]:font-medium",
+                    "text-zinc-400 hover:text-emerald-400 text-sm font-medium transition-colors",
+                    "data-[active=true]:text-emerald-400 data-[active=true]:font-medium",
                   )}
                   href={item.href}
                 >
@@ -38,7 +41,7 @@ export const Navbar = () => {
           <button
             aria-expanded={isMenuOpen}
             aria-label="Toggle menu"
-            className="p-2"
+            className="p-2 text-zinc-400 hover:text-emerald-400"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
           >
             <svg

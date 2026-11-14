@@ -4,13 +4,12 @@ export const title = tv({
   base: "tracking-tight inline font-semibold",
   variants: {
     color: {
-      violet: "from-[#FF1CF7] to-[#b249f8]",
-      yellow: "from-[#FF705B] to-[#FFB457]",
-      blue: "from-[#5EA2EF] to-[#0072F5]",
-      cyan: "from-[#00b7fa] to-[#01cfea]",
-      green: "from-[#6FEE8D] to-[#17c964]",
-      pink: "from-[#FF72E1] to-[#F54C7A]",
-      foreground: "dark:from-[#FFFFFF] dark:to-[#4B4B4B]",
+      green: "from-[#22c55e] to-[#16a34a]",
+      lime: "from-[#84cc16] to-[#22c55e]",
+      emerald: "from-[#34d399] to-[#059669]",
+      teal: "from-[#2dd4bf] to-[#0d9488]",
+      cyan: "from-[#22d3ee] to-[#06b6d4]",
+      foreground: "from-[#f0faf2] to-[#81c784]",
     },
     size: {
       sm: "text-3xl lg:text-4xl",
@@ -26,15 +25,7 @@ export const title = tv({
   },
   compoundVariants: [
     {
-      color: [
-        "violet",
-        "yellow",
-        "blue",
-        "cyan",
-        "green",
-        "pink",
-        "foreground",
-      ],
+      color: ["green", "lime", "emerald", "teal", "cyan", "foreground"],
       class: "bg-clip-text text-transparent bg-gradient-to-b",
     },
   ],

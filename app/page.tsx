@@ -3,7 +3,7 @@ import Monitor from "@/components/monitor";
 
 export default function Home() {
   return (
-    <section className="flex flex items-center justify-center gap-4 w-full h-full p-1">
+    <section className="flex items-stretch justify-center gap-4 w-full h-[calc(100vh-5rem)] p-4">
       <Map
         center={[41.683298, -0.88442]}
         zoom={16}
