@@ -19,23 +19,6 @@ import {
 export const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  const searchInput = (
-    <TextField aria-label="Search" type="search">
-      <InputGroup>
-        <InputGroup.Prefix>
-          <SearchIcon className="text-base text-muted pointer-events-none flex-shrink-0" />
-        </InputGroup.Prefix>
-        <InputGroup.Input className="text-sm" placeholder="Search..." />
-        <InputGroup.Suffix>
-          <Kbd className="hidden lg:inline-flex">
-            <Kbd.Abbr keyValue="command" />
-            <Kbd.Content>K</Kbd.Content>
-          </Kbd>
-        </InputGroup.Suffix>
-      </InputGroup>
-    </TextField>
-  );
-
   return (
     <nav className="sticky top-0 z-40 w-full border-b border-separator bg-background/70 backdrop-blur-lg">
       <header className="mx-auto flex h-16 max-w-[1280px] items-center justify-between gap-4 px-6">
@@ -61,54 +44,7 @@ export const Navbar = () => {
           </ul>
         </div>
 
-        <div className="hidden sm:flex items-center gap-2">
-          <Link
-            aria-label="Twitter"
-            href={siteConfig.links.twitter}
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-            <TwitterIcon className="text-muted" />
-          </Link>
-          <Link
-            aria-label="Discord"
-            href={siteConfig.links.discord}
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-            <DiscordIcon className="text-muted" />
-          </Link>
-          <Link
-            aria-label="Github"
-            href={siteConfig.links.github}
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-            <GithubIcon className="text-muted" />
-          </Link>
-          <ThemeSwitch />
-          <div className="hidden lg:flex">{searchInput}</div>
-          <div className="hidden md:flex">
-            <Button
-              className="text-sm font-normal"
-              variant="tertiary"
-              onPress={() => window.open(siteConfig.links.sponsor, "_blank")}
-            >
-              <HeartFilledIcon className="text-danger" />
-              Sponsor
-            </Button>
-          </div>
-        </div>
-
         <div className="flex sm:hidden items-center gap-2">
-          <Link
-            aria-label="Github"
-            href={siteConfig.links.github}
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-            <GithubIcon className="text-muted" />
-          </Link>
           <ThemeSwitch />
           <button
             aria-expanded={isMenuOpen}
@@ -144,7 +80,6 @@ export const Navbar = () => {
 
       {isMenuOpen && (
         <div className="border-t border-separator sm:hidden">
-          <div className="p-4">{searchInput}</div>
           <ul className="flex flex-col gap-2 px-4 pb-4">
             {siteConfig.navMenuItems.map((item, index) => (
               <li key={`${item.label}-${index}`}>
