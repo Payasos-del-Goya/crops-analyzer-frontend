@@ -1,5 +1,3 @@
-import CropIcon from "./crop-icon";
-
 export type MarkerVariant = "ok" | "down" | "pending";
 export type MarkerRole = "nodo" | "puente";
 
@@ -63,15 +61,12 @@ export default function MapMarker({
   variant = "ok",
   role = "nodo",
   zoneColor,
-  cropId,
 }: {
   label?: string;
   variant?: MarkerVariant;
   role?: MarkerRole;
   /** Color de la zona de la recomendación (el borde); DOWN sigue en rojo. */
   zoneColor?: string;
-  /** Cultivo recomendado en su zona: su icono sustituye al de la baliza. */
-  cropId?: number;
 }) {
   const c = COLORS[variant];
   const shape = role === "puente" ? "rounded-xl" : "rounded-full";
@@ -87,11 +82,7 @@ export default function MapMarker({
               : undefined
           }
         >
-          {cropId !== undefined ? (
-            <CropIcon cropId={cropId} />
-          ) : (
-            <Glyph role={role} />
-          )}
+          <Glyph role={role} />
         </div>
       </div>
       {label && (

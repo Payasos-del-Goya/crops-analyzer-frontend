@@ -21,8 +21,6 @@ export interface MapMarkerData {
   role?: MarkerRole;
   /** Color de su zona en la recomendación. */
   zoneColor?: string;
-  /** Cultivo recomendado en su zona (cambia el icono). */
-  cropId?: number;
 }
 
 /** Superficie de una zona: polígonos rellenos de su color y su nombre en el centro. */
@@ -60,12 +58,10 @@ function markerIcon(
   variant: MarkerVariant = "ok",
   role: MarkerRole = "nodo",
   zoneColor?: string,
-  cropId?: number,
 ) {
   return L.divIcon({
     html: renderToString(
       <MapMarkerComponent
-        cropId={cropId}
         label={label}
         role={role}
         variant={variant}
@@ -236,7 +232,7 @@ export default function MapClient({
 
     markers.forEach((m) => {
       const marker = L.marker([m.lat, m.lng], {
-        icon: markerIcon(m.label, m.variant, m.role, m.zoneColor, m.cropId),
+        icon: markerIcon(m.label, m.variant, m.role, m.zoneColor),
         zIndexOffset: m.variant === "down" ? 1000 : 0,
       }).addTo(layer);
 

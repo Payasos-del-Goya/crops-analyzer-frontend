@@ -137,16 +137,17 @@ export default function Dashboard({
   const markers = useMemo<MapMarkerData[]>(() => {
     return balizas.map((b) => {
       const device = devices[b.id];
+      const down = deviceStatus(device) === "down";
 
       return {
         id: b.id,
         lat: Number(b.latitud),
         lng: Number(b.longitud),
-        label: b.label || b.id,
-        variant: deviceStatus(device) === "down" ? "down" : "ok",
+        // Con las zonas pintadas, sin nombres (solo el de las caídas, por el aviso DOWN).
+        label: b.id in zoneOf && !down ? undefined : b.label || b.id,
+        variant: down ? "down" : "ok",
         role: device?.tipo === "puente" ? "puente" : "nodo",
         zoneColor: b.id in zoneOf ? zoneColor(zoneOf[b.id]) : undefined,
-        cropId: b.id in zoneOf ? zoneBest[zoneOf[b.id]]?.id : undefined,
         popupHtml: renderToString(
           <BalizaPopup
             baliza={b}
@@ -165,7 +166,6 @@ export default function Dashboard({
     monitor.icingaAvailable,
     monitor.now,
     zoneOf,
-    zoneBest,
   ]);
 
   // Red mesh: ruta real de cada nodo hacia su puente (estado.gateway) y
