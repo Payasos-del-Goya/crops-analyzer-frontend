@@ -1,22 +1,28 @@
-import Map from "@/components/map";
-import Monitor from "@/components/monitor";
+import Dashboard from "@/components/dashboard";
+import { BACKEND_URL, Baliza, CropInfo } from "@/lib/api";
+
+async function fetchBackend<T>(path: string): Promise<T | null> {
+  try {
+    const res = await fetch(`${BACKEND_URL}${path}`, { cache: "no-store" });
+
+    return res.ok ? ((await res.json()) as T) : null;
+  } catch {
+    return null;
+  }
+}
 
 export default async function Home() {
-  const data = await fetch('http://127.0.0.1:8000/balizas')
-  const balizas = await data.json();
-  const markers = balizas.crops?.map((crop: any) => ({
-      lat: crop.latitud,
-      lng: crop.longitud,
-      label: crop.id,
-    })) || [];
+  const [balizasRes, cropsRes] = await Promise.all([
+    // El backend devolvía las balizas bajo la clave `crops`; aceptamos ambas.
+    fetchBackend<{ balizas?: Baliza[]; crops?: Baliza[] }>("/balizas"),
+    fetchBackend<{ crops?: CropInfo[] }>("/crops_info"),
+  ]);
+
   return (
-    <section className="flex items-stretch justify-center gap-4 w-full h-[calc(100vh-5rem)] p-4">
-      <Map
-        center={[41.683298, -0.88442]}
-        zoom={16}
-        markers={markers}
-      />
-      <Monitor />
-    </section>
+    <Dashboard
+      backendError={!balizasRes || !cropsRes}
+      crops={cropsRes?.crops ?? []}
+      initialBalizas={balizasRes?.balizas ?? balizasRes?.crops ?? []}
+    />
   );
 }
