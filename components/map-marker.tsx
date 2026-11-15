@@ -78,7 +78,9 @@ export default function MapMarker({
         </div>
       </div>
       {label && (
-        <span className="absolute top-full mt-1 flex items-center gap-1 px-2 py-0.5 text-xs font-semibold bg-[#07130d]/90 text-white border border-white/10 rounded-md whitespace-nowrap">
+        <span
+          className={`marker-label ${variant === "down" ? "is-down" : ""} absolute top-full mt-1 flex items-center gap-1 px-2 py-0.5 text-xs font-semibold bg-[#07130d]/90 text-white border border-white/10 rounded-md whitespace-nowrap`}
+        >
           {label}
           {variant === "down" && (
             <span className="px-1 rounded bg-red-500 text-[10px] font-bold text-white">

@@ -59,6 +59,8 @@ function markerIcon(
   });
 }
 
+const LABEL_MIN_ZOOM = 17;
+
 // Todas las líneas llevan un "borde" oscuro debajo para verse igual sobre
 // cualquier fondo del satélite.
 const CASING: L.PolylineOptions = {
@@ -127,6 +129,16 @@ export default function MapClient({
       { pane: "overlayPane" },
     ).addTo(map);
 
+    // Con muchas balizas juntas los nombres se pisan al alejarse: por debajo
+    // de LABEL_MIN_ZOOM solo se ven los iconos (y el nombre de las caídas).
+    const toggleLabels = () =>
+      map
+        .getContainer()
+        .classList.toggle("labels-hidden", map.getZoom() < LABEL_MIN_ZOOM);
+
+    map.on("zoomend", toggleLabels);
+    toggleLabels();
+
     map.on("click", (e: L.LeafletMouseEvent) =>
       onMapClickRef.current?.(e.latlng.lat, e.latlng.lng),
     );
@@ -181,7 +193,7 @@ export default function MapClient({
       fittedRef.current = true;
       mapRef.current.fitBounds(
         L.latLngBounds(markers.map((m) => [m.lat, m.lng] as L.LatLngTuple)),
-        { padding: [80, 80], maxZoom: 19 },
+        { padding: [40, 40], maxZoom: 19 },
       );
     }
 
