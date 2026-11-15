@@ -18,11 +18,14 @@ const PRESENCE: Record<Presence, { text: string; cls: string }> = {
 /** Contenido del popup de una baliza (se renderiza a HTML para Leaflet). */
 export default function BalizaPopup({
   baliza,
+  cropName,
   device,
   icingaAvailable,
   now,
 }: {
   baliza: Baliza;
+  /** Cultivo plantado (de `cultivos`), si la baliza tiene uno asignado. */
+  cropName?: string;
   device?: MonitorDevice;
   /** false si el backend no puede leer Icinga. */
   icingaAvailable: boolean;
@@ -33,10 +36,21 @@ export default function BalizaPopup({
   const seen = device ? lastSeen(device) : null;
   const checked = device?.icinga?.comprobado;
   const e = device?.estado;
-  const rows: [string, string][] = [
+  const terrain = [
+    baliza.zona,
+    baliza.textura_suelo,
+    baliza.altitud_m != null
+      ? `${Math.round(Number(baliza.altitud_m))} m`
+      : null,
+  ].filter(Boolean);
+  const rows: [string, string][] = [];
+
+  if (cropName) rows.push(["Cultivo", cropName]);
+  if (terrain.length) rows.push(["Terreno", terrain.join(" · ")]);
+  rows.push(
     ["Última lectura", seen ? ago(now - seen) : "Nunca"],
     ...(device ? metrics(device) : []),
-  ];
+  );
 
   if (e?.sensores_ok !== undefined)
     rows.push(["Sensores OK", String(e.sensores_ok)]);

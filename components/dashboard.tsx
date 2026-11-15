@@ -12,6 +12,19 @@ import Monitor from "./monitor";
 import { Baliza, BalizaCreate, CropInfo } from "@/lib/api";
 import { deviceStatus, useMonitor } from "@/lib/monitor";
 
+/** Distancia en metros entre dos balizas. */
+function distance(a: Baliza, b: Baliza): number {
+  const k = Math.cos((Number(a.latitud) * Math.PI) / 180);
+
+  return Math.hypot(
+    (Number(a.longitud) - Number(b.longitud)) * 111_320 * k,
+    (Number(a.latitud) - Number(b.latitud)) * 110_540,
+  );
+}
+
+/** Más allá no se dibujan enlaces de malla entre nodos (alcance de radio). */
+const MESH_RANGE_M = 1500;
+
 /** ¿Pasa el segmento a–b cerca de la baliza c? (distancias en metros) */
 function nearSegment(c: Baliza, a: Baliza, b: Baliza): boolean {
   const k = Math.cos((Number(a.latitud) * Math.PI) / 180);
@@ -61,6 +74,11 @@ export default function Dashboard({
     [monitor.devices],
   );
 
+  const cropNames = useMemo(
+    () => Object.fromEntries(crops.map((c) => [c.id, c.cultivo])),
+    [crops],
+  );
+
   const markers = useMemo<MapMarkerData[]>(() => {
     return balizas.map((b) => {
       const device = devices[b.id];
@@ -75,6 +93,7 @@ export default function Dashboard({
         popupHtml: renderToString(
           <BalizaPopup
             baliza={b}
+            cropName={b.cultivo_id ? cropNames[b.cultivo_id] : undefined}
             device={device}
             icingaAvailable={monitor.icingaAvailable}
             now={monitor.now}
@@ -82,11 +101,12 @@ export default function Dashboard({
         ),
       };
     });
-  }, [balizas, devices, monitor.icingaAvailable, monitor.now]);
+  }, [balizas, cropNames, devices, monitor.icingaAvailable, monitor.now]);
 
   // Red mesh: ruta real de cada nodo hacia su puente (estado.gateway) y
-  // enlaces de malla entre nodos. Se omite un enlace de malla si ya lo cubre
-  // una ruta o si pasa por encima de otra baliza (se vería superpuesto).
+  // enlaces de malla entre nodos cercanos del mismo puente. Se omite un
+  // enlace de malla si ya lo cubre una ruta, si los nodos están fuera de
+  // alcance o si pasa por encima de otra baliza (se vería superpuesto).
   const links = useMemo<MapLink[]>(() => {
     const byId = Object.fromEntries(balizas.map((b) => [b.id, b]));
     const ids = balizas.map((b) => b.id);
@@ -104,6 +124,8 @@ export default function Dashboard({
     ids.forEach((a, i) =>
       ids.slice(i + 1).forEach((b) => {
         if (gateway(a) === b || gateway(b) === a) return;
+        if (gateway(a) !== gateway(b)) return;
+        if (distance(byId[a], byId[b]) > MESH_RANGE_M) return;
         const crossesNode = ids.some(
           (c) => c !== a && c !== b && nearSegment(byId[c], byId[a], byId[b]),
         );

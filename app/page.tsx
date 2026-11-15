@@ -1,28 +1,32 @@
+import { redirect } from "next/navigation";
+
 import Dashboard from "@/components/dashboard";
-import { BACKEND_URL, Baliza, CropInfo } from "@/lib/api";
-
-async function fetchBackend<T>(path: string): Promise<T | null> {
-  try {
-    const res = await fetch(`${BACKEND_URL}${path}`, { cache: "no-store" });
-
-    return res.ok ? ((await res.json()) as T) : null;
-  } catch {
-    return null;
-  }
-}
+import { Baliza, CropInfo } from "@/lib/api";
+import { backendFetch } from "@/lib/server";
 
 export default async function Home() {
   const [balizasRes, cropsRes] = await Promise.all([
     // El backend devolvía las balizas bajo la clave `crops`; aceptamos ambas.
-    fetchBackend<{ balizas?: Baliza[]; crops?: Baliza[] }>("/balizas"),
-    fetchBackend<{ crops?: CropInfo[] }>("/crops_info"),
+    backendFetch<{ balizas?: Baliza[]; crops?: Baliza[] }>("/balizas"),
+    backendFetch<{ crops?: CropInfo[] }>("/crops_info"),
   ]);
+
+  // Sesión caducada o no válida.
+  if (
+    (!balizasRes.ok && balizasRes.unauthorized) ||
+    (!cropsRes.ok && cropsRes.unauthorized)
+  )
+    redirect("/login");
+
+  const balizas = balizasRes.ok
+    ? (balizasRes.data.balizas ?? balizasRes.data.crops ?? [])
+    : [];
 
   return (
     <Dashboard
-      backendError={!balizasRes || !cropsRes}
-      crops={cropsRes?.crops ?? []}
-      initialBalizas={balizasRes?.balizas ?? balizasRes?.crops ?? []}
+      backendError={!balizasRes.ok || !cropsRes.ok}
+      crops={cropsRes.ok ? (cropsRes.data.crops ?? []) : []}
+      initialBalizas={balizas}
     />
   );
 }
