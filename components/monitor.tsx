@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 import { MonitorDevice } from "@/lib/api";
 import { ago, deviceStatus, lastSeen, metrics, ONLINE_MS } from "@/lib/monitor";
 
@@ -7,6 +9,8 @@ interface MonitorProps {
   now: number;
   /** id de baliza → label, para mostrar nombres legibles. */
   labels?: Record<string, string>;
+  /** Se pinta encima de la lista (p. ej. pestañas). */
+  header?: ReactNode;
 }
 
 export default function Monitor({
@@ -14,6 +18,7 @@ export default function Monitor({
   error,
   now,
   labels = {},
+  header,
 }: MonitorProps) {
   const rows = (devices ?? [])
     .map((d) => {
@@ -38,6 +43,7 @@ export default function Monitor({
 
   return (
     <div className="w-80 h-full shrink-0 p-4 rounded-xl border border-emerald-950/50 bg-[#060e0a] flex flex-col gap-3">
+      {header}
       <div className="flex-1 overflow-y-auto -mr-2 pr-2 space-y-2">
         {devices === null && !error && (
           <p className="text-xs text-zinc-500">Cargando lecturas…</p>

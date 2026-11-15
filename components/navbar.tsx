@@ -2,9 +2,7 @@
 
 import { useState } from "react";
 import NextLink from "next/link";
-import clsx from "clsx";
 
-import { siteConfig } from "@/config/site";
 import { logout, Session } from "@/lib/api";
 
 export const Navbar = ({ session }: { session: Session | null }) => {
@@ -24,21 +22,6 @@ export const Navbar = ({ session }: { session: Session | null }) => {
               Crop Catcher
             </p>
           </NextLink>
-          <ul className="hidden lg:flex gap-4 ml-4">
-            {siteConfig.navItems.map((item) => (
-              <li key={item.href}>
-                <NextLink
-                  className={clsx(
-                    "text-zinc-400 hover:text-emerald-400 text-sm font-medium transition-colors",
-                    "data-[active=true]:text-emerald-400 data-[active=true]:font-medium",
-                  )}
-                  href={item.href}
-                >
-                  {item.label}
-                </NextLink>
-              </li>
-            ))}
-          </ul>
         </div>
 
         {session && (

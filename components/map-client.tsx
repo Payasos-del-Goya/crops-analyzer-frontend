@@ -19,6 +19,15 @@ export interface MapMarkerData {
   popupHtml?: string;
   variant?: MarkerVariant;
   role?: MarkerRole;
+  /** Color de su zona en la recomendación. */
+  zoneColor?: string;
+}
+
+/** Superficie de una zona: polígonos rellenos de su color y su nombre en el centro. */
+export interface MapArea {
+  color: string;
+  polygons: [number, number][][];
+  label?: { lat: number; lng: number; text: string };
 }
 
 /** Enlace de la red mesh entre dos marcadores (por id). */
@@ -35,6 +44,7 @@ export interface MapClientProps {
   zoom?: number;
   markers?: MapMarkerData[];
   links?: MapLink[];
+  areas?: MapArea[];
   className?: string;
   /** Punto provisional (p. ej. la baliza que se está dando de alta). */
   pendingPoint?: [number, number] | null;
@@ -47,10 +57,16 @@ function markerIcon(
   label?: string,
   variant: MarkerVariant = "ok",
   role: MarkerRole = "nodo",
+  zoneColor?: string,
 ) {
   return L.divIcon({
     html: renderToString(
-      <MapMarkerComponent label={label} role={role} variant={variant} />,
+      <MapMarkerComponent
+        label={label}
+        role={role}
+        variant={variant}
+        zoneColor={zoneColor}
+      />,
     ),
     className: "",
     iconSize: [MARKER_SIZE, MARKER_SIZE],
@@ -60,6 +76,16 @@ function markerIcon(
 }
 
 const LABEL_MIN_ZOOM = 17;
+
+// Estilo en línea (no en globals.css): así no depende de que el navegador
+// haya recargado la hoja de estilos.
+const ZONE_LABEL_STYLE =
+  "position:absolute;transform:translate(-50%,-50%);white-space:nowrap;" +
+  "padding:2px 8px;font-size:12px;font-weight:600;line-height:1.4;color:#fff;" +
+  "background:rgba(7,19,13,0.85);border:2px solid;border-radius:6px;pointer-events:none;";
+
+const escapeHtml = (s: string) =>
+  s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
 // Todas las líneas llevan un "borde" oscuro debajo para verse igual sobre
 // cualquier fondo del satélite.
@@ -85,6 +111,7 @@ export default function MapClient({
   zoom = 17,
   markers = [],
   links = [],
+  areas = [],
   className = "",
   pendingPoint = null,
   picking = false,
@@ -110,11 +137,12 @@ export default function MapClient({
       zoom,
       scrollWheelZoom: true,
       dragging: true,
+      // Sin botones: se acerca con la rueda o pellizcando.
       zoomControl: false,
     });
 
-    // Zoom abajo a la derecha: arriba a la izquierda va "¿Qué quieres plantar?".
-    L.control.zoom({ position: "bottomright" }).addTo(map);
+    // Sin el «Leaflet» delante: solo el crédito de las imágenes, que Esri exige.
+    map.attributionControl.setPrefix(false);
 
     L.tileLayer(
       "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
@@ -172,6 +200,18 @@ export default function MapClient({
       markers.filter((m) => m.id).map((m) => [m.id, [m.lat, m.lng]]),
     ) as Record<string, L.LatLngTuple>;
 
+    // Debajo de todo, la superficie de cada zona y su nombre.
+    areas.forEach((a) => {
+      a.polygons.forEach((polygon) =>
+        L.polygon(polygon, {
+          stroke: false,
+          fillColor: a.color,
+          fillOpacity: 0.3,
+          interactive: false,
+        }).addTo(layer),
+      );
+    });
+
     // Primero la malla y luego las rutas, para que queden por encima.
     [...links]
       .sort((a, b) => Number(a.kind === "route") - Number(b.kind === "route"))
@@ -199,7 +239,7 @@ export default function MapClient({
 
     markers.forEach((m) => {
       const marker = L.marker([m.lat, m.lng], {
-        icon: markerIcon(m.label, m.variant, m.role),
+        icon: markerIcon(m.label, m.variant, m.role, m.zoneColor),
         zIndexOffset: m.variant === "down" ? 1000 : 0,
       }).addTo(layer);
 
@@ -212,13 +252,27 @@ export default function MapClient({
       if (m.id && m.id === reopenId) marker.openPopup();
     });
 
+    // Nombre del cultivo de cada zona, encima de todo.
+    areas.forEach((a) => {
+      if (!a.label) return;
+      L.marker([a.label.lat, a.label.lng], {
+        icon: L.divIcon({
+          html: `<span style="${ZONE_LABEL_STYLE}border-color:${a.color}">${escapeHtml(a.label.text)}</span>`,
+          className: "",
+          iconSize: [0, 0],
+        }),
+        interactive: false,
+        zIndexOffset: 2000,
+      }).addTo(layer);
+    });
+
     if (pendingPoint) {
       L.marker(pendingPoint, {
         icon: markerIcon("Nueva", "pending"),
         interactive: false,
       }).addTo(layer);
     }
-  }, [markers, links, pendingPoint]);
+  }, [markers, links, areas, pendingPoint]);
 
   useEffect(() => {
     const el = mapRef.current?.getContainer();
