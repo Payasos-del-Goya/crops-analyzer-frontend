@@ -1,47 +1,99 @@
 export type MarkerVariant = "ok" | "down" | "pending";
+export type MarkerRole = "nodo" | "puente";
 
 // Clases completas (no interpoladas) para que Tailwind las detecte.
-const COLORS: Record<MarkerVariant, { bg: string; tip: string }> = {
-  ok: { bg: "bg-green-500", tip: "border-t-green-500" },
-  down: { bg: "bg-red-500", tip: "border-t-red-500" },
-  pending: { bg: "bg-amber-400", tip: "border-t-amber-400" },
+const COLORS: Record<
+  MarkerVariant,
+  { ring: string; glyph: string; halo: string }
+> = {
+  ok: {
+    ring: "border-emerald-400",
+    glyph: "text-emerald-300",
+    halo: "bg-emerald-400/40",
+  },
+  down: {
+    ring: "border-red-500",
+    glyph: "text-red-400",
+    halo: "bg-red-500/50",
+  },
+  pending: {
+    ring: "border-amber-400",
+    glyph: "text-amber-300",
+    halo: "bg-amber-400/40",
+  },
 };
+
+/** Iconos basados en Lucide (ISC): "radio" para nodos, "radio-tower" para el puente. */
+function Glyph({ role }: { role: MarkerRole }) {
+  return (
+    <svg
+      className="w-[18px] h-[18px]"
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      viewBox="0 0 24 24"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      {role === "puente" ? (
+        <>
+          <path d="M4.9 16.1C1 12.2 1 5.8 4.9 1.9" />
+          <path d="M7.8 4.7a6.14 6.14 0 0 0-.8 7.5" />
+          <circle cx="12" cy="9" r="2" />
+          <path d="M16.9 12.2a6.14 6.14 0 0 0-.8-7.5" />
+          <path d="M19.1 1.9a9.96 9.96 0 0 1 0 14.1" />
+          <path d="M9.5 18h5" />
+          <path d="m8 22 4-11 4 11" />
+        </>
+      ) : (
+        <>
+          <path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9" />
+          <path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5" />
+          <circle cx="12" cy="12" r="2" />
+          <path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5" />
+          <path d="M19.1 4.9C23 8.8 23 15.1 19.1 19" />
+        </>
+      )}
+    </svg>
+  );
+}
+
+/** Tamaño del icono (el ancla está en el centro del círculo). */
+export const MARKER_SIZE = 40;
 
 export default function MapMarker({
   label,
   variant = "ok",
+  role = "nodo",
 }: {
   label?: string;
   variant?: MarkerVariant;
+  role?: MarkerRole;
 }) {
-  const { bg, tip } = COLORS[variant];
+  const c = COLORS[variant];
+  const shape = role === "puente" ? "rounded-xl" : "rounded-full";
 
   return (
-    <div className="flex flex-col items-center">
-      <div
-        className={`relative flex items-center justify-center w-8 h-8 rounded-full ${bg} border-2 border-white shadow-lg`}
-      >
-        <svg
-          className="w-4 h-4"
-          fill="white"
-          viewBox="0 0 24 24"
-          xmlns="http://www.w3.org/2000/svg"
+    <div className="relative flex flex-col items-center">
+      <div className="relative flex items-center justify-center w-10 h-10">
+        <span
+          aria-hidden
+          className={`absolute inset-0 ${shape} ${c.halo} baliza-halo`}
+        />
+        <div
+          className={`relative flex items-center justify-center w-9 h-9 ${shape} border-2 ${c.ring} ${c.glyph} bg-[#07130d]/95 shadow-[0_0_12px_rgba(0,0,0,0.7)]`}
         >
-          <path
-            clipRule="evenodd"
-            d="M11.54 22.351l.07.04.028.016a.76.76 0 00.723 0l.028-.015.071-.041a16.975 16.975 0 001.144-.742 19.58 19.58 0 002.683-2.282c1.944-1.99 3.963-4.98 3.963-8.827a8.25 8.25 0 00-16.5 0c0 3.846 2.02 6.837 3.963 8.827a19.58 19.58 0 002.682 2.282 16.975 16.975 0 001.145.742zM12 13.5a3 3 0 100-6 3 3 0 000 6z"
-            fillRule="evenodd"
-          />
-        </svg>
+          <Glyph role={role} />
+        </div>
       </div>
-      <div
-        className={`w-0 h-0 border-l-[6px] border-r-[6px] border-t-[8px] border-l-transparent border-r-transparent ${tip} -mt-[2px]`}
-      />
       {label && (
-        <span className="mt-1 px-2 py-0.5 text-xs font-semibold bg-black/70 text-white rounded whitespace-nowrap">
+        <span className="absolute top-full mt-1 flex items-center gap-1 px-2 py-0.5 text-xs font-semibold bg-[#07130d]/90 text-white border border-white/10 rounded-md whitespace-nowrap shadow">
           {label}
           {variant === "down" && (
-            <span className="ml-1 text-red-400">· DOWN</span>
+            <span className="px-1 rounded bg-red-500 text-[10px] font-bold text-white">
+              DOWN
+            </span>
           )}
         </span>
       )}

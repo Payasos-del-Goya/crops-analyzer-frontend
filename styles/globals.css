@@ -163,17 +163,52 @@ body {
   background: #166534;
 }
 
-/* Popups de Leaflet con el tema oscuro */
-.leaflet-popup-content-wrapper,
-.leaflet-popup-tip {
-  background: #060e0a;
-  color: #e4e4e7;
-  border: 1px solid rgba(6, 78, 59, 0.6);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.6);
+/* Popups de Leaflet con el tema oscuro.
+   `.leaflet-container` delante para ganar a leaflet.css (se carga después). */
+.leaflet-container .leaflet-popup-content-wrapper,
+.leaflet-container .leaflet-popup-tip {
+  background: #0b1510;
+  color: #f4f4f5;
+  border: 1px solid rgba(52, 211, 153, 0.35);
+  box-shadow: 0 6px 28px rgba(0, 0, 0, 0.7);
 }
-.leaflet-popup-content {
-  margin: 12px;
+.leaflet-container .leaflet-popup-content {
+  margin: 14px;
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.4;
+}
+.leaflet-container .leaflet-popup-content p {
+  margin: 0;
 }
 .leaflet-container a.leaflet-popup-close-button {
-  color: #71717a;
+  color: #d4d4d8;
+}
+.leaflet-container a.leaflet-popup-close-button:hover {
+  color: #ffffff;
+}
+
+/* Halo de las balizas en el mapa */
+@keyframes baliza-halo {
+  0% { transform: scale(0.8); opacity: 0.9; }
+  100% { transform: scale(1.9); opacity: 0; }
+}
+.baliza-halo {
+  animation: baliza-halo 2.4s ease-out infinite;
+}
+
+/* Rutas de la malla hacia el puente: el trazo "fluye" hacia el puente */
+@keyframes mesh-flow {
+  to { stroke-dashoffset: -24; }
+}
+.mesh-route {
+  stroke-dasharray: 8 4;
+  animation: mesh-flow 1.2s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .baliza-halo,
+  .mesh-route {
+    animation: none;
+  }
 }

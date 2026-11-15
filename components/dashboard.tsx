@@ -6,7 +6,7 @@ import { renderToString } from "react-dom/server";
 import BalizaForm from "./baliza-form";
 import BalizaPopup from "./baliza-popup";
 import CropPicker from "./crop-picker";
-import Map, { MapMarkerData } from "./map";
+import Map, { MapLink, MapMarkerData } from "./map";
 import Monitor from "./monitor";
 
 import { Baliza, BalizaCreate, CropInfo } from "@/lib/api";
@@ -32,10 +32,15 @@ export default function Dashboard({
 
   const monitor = useMonitor();
 
+  const devices = useMemo(
+    () =>
+      Object.fromEntries(
+        (monitor.devices ?? []).map((d) => [d.dispositivo, d]),
+      ),
+    [monitor.devices],
+  );
+
   const markers = useMemo<MapMarkerData[]>(() => {
-    const devices = Object.fromEntries(
-      (monitor.devices ?? []).map((d) => [d.dispositivo, d]),
-    );
     const cropsById = Object.fromEntries(crops.map((c) => [c.id, c]));
 
     return balizas.map((b) => {
@@ -47,6 +52,7 @@ export default function Dashboard({
         lng: Number(b.longitud),
         label: b.label || b.id,
         variant: deviceStatus(device) === "down" ? "down" : "ok",
+        role: device?.tipo === "puente" ? "puente" : "nodo",
         popupHtml: renderToString(
           <BalizaPopup
             baliza={b}
@@ -57,7 +63,42 @@ export default function Dashboard({
         ),
       };
     });
-  }, [balizas, crops, monitor.devices, monitor.now]);
+  }, [balizas, crops, devices, monitor.now]);
+
+  // Red mesh: todos los nodos son vecinos en la malla y cada uno tiene una
+  // ruta real hacia el puente que publica sus datos (estado.gateway).
+  const links = useMemo<MapLink[]>(() => {
+    const ids = balizas.map((b) => b.id);
+    const isDown = (id: string) => deviceStatus(devices[id]) === "down";
+    const out: MapLink[] = [];
+
+    ids.forEach((a, i) =>
+      ids.slice(i + 1).forEach((b) =>
+        out.push({
+          from: a,
+          to: b,
+          kind: "mesh",
+          down: isDown(a) || isDown(b),
+        }),
+      ),
+    );
+    ids.forEach((id) => {
+      const gw = devices[id]?.estado.gateway;
+
+      if (gw && gw !== id && ids.includes(gw))
+        out.push({ from: id, to: gw, kind: "route", down: isDown(id) });
+    });
+
+    return out;
+  }, [balizas, devices]);
+
+  // En el monitor solo las balizas registradas en PostgreSQL: los nombres
+  // antiguos que siguen en InfluxDB (b01..b03...) ya no existen.
+  const registeredDevices = useMemo(() => {
+    const ids = new Set(balizas.map((b) => b.id));
+
+    return monitor.devices?.filter((d) => ids.has(d.dispositivo)) ?? null;
+  }, [balizas, monitor.devices]);
 
   const labels = useMemo(
     () =>
@@ -80,7 +121,8 @@ export default function Dashboard({
   return (
     <section className="flex items-stretch justify-center gap-4 w-full h-[calc(100vh-5rem)] p-4">
       <Map
-        center={[41.683298, -0.88442]}
+        center={[41.685, -0.887]}
+        links={links}
         markers={markers}
         pendingPoint={newPoint}
         picking={adding}
@@ -116,7 +158,7 @@ export default function Dashboard({
         )}
       </Map>
       <Monitor
-        devices={monitor.devices}
+        devices={registeredDevices}
         error={monitor.error}
         labels={labels}
         now={monitor.now}
