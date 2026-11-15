@@ -162,3 +162,18 @@ body {
 .dark ::-webkit-scrollbar-thumb:hover {
   background: #166534;
 }
+
+/* Popups de Leaflet con el tema oscuro */
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
+  background: #060e0a;
+  color: #e4e4e7;
+  border: 1px solid rgba(6, 78, 59, 0.6);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.6);
+}
+.leaflet-popup-content {
+  margin: 12px;
+}
+.leaflet-container a.leaflet-popup-close-button {
+  color: #71717a;
+}

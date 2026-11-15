@@ -1,12 +1,20 @@
+export type MarkerVariant = "ok" | "down" | "pending";
+
+// Clases completas (no interpoladas) para que Tailwind las detecte.
+const COLORS: Record<MarkerVariant, { bg: string; tip: string }> = {
+  ok: { bg: "bg-green-500", tip: "border-t-green-500" },
+  down: { bg: "bg-red-500", tip: "border-t-red-500" },
+  pending: { bg: "bg-amber-400", tip: "border-t-amber-400" },
+};
+
 export default function MapMarker({
   label,
-  pending = false,
+  variant = "ok",
 }: {
   label?: string;
-  pending?: boolean;
+  variant?: MarkerVariant;
 }) {
-  const bg = pending ? "bg-amber-400" : "bg-green-500";
-  const tip = pending ? "border-t-amber-400" : "border-t-green-500";
+  const { bg, tip } = COLORS[variant];
 
   return (
     <div className="flex flex-col items-center">
@@ -32,6 +40,9 @@ export default function MapMarker({
       {label && (
         <span className="mt-1 px-2 py-0.5 text-xs font-semibold bg-black/70 text-white rounded whitespace-nowrap">
           {label}
+          {variant === "down" && (
+            <span className="ml-1 text-red-400">· DOWN</span>
+          )}
         </span>
       )}
     </div>

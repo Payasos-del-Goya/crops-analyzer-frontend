@@ -1,101 +1,41 @@
-"use client";
+import { MonitorDevice } from "@/lib/api";
+import { ago, deviceStatus, lastSeen, metrics, ONLINE_MS } from "@/lib/monitor";
 
-import { useEffect, useState } from "react";
-
-import { getMonitor, MonitorDevice } from "@/lib/api";
-
-const POLL_MS = 30_000;
-/** Sin noticias en este tiempo → la baliza se considera desconectada. */
-const ONLINE_MS = 3 * 60_000;
-
-function lastSeen(d: MonitorDevice): number | null {
-  const times = [d.ultima_lectura, d.ultimo_estado]
-    .filter((t): t is string => !!t)
-    .map((t) => new Date(t).getTime());
-
-  return times.length ? Math.max(...times) : null;
-}
-
-function ago(ms: number): string {
-  const s = Math.max(0, Math.round(ms / 1000));
-
-  if (s < 60) return `hace ${s} s`;
-  if (s < 3600) return `hace ${Math.round(s / 60)} min`;
-  if (s < 86400) return `hace ${Math.round(s / 3600)} h`;
-
-  return `hace ${Math.round(s / 86400)} d`;
-}
-
-function metrics(d: MonitorDevice): [string, string][] {
-  const a = d.atmosfera;
-  const suelo = d.suelo[0];
-  const e = d.estado;
-  const out: [string, number | undefined, string, number][] = [
-    ["Temp. aire", a.temp_aire, "°C", 1],
-    ["Humedad aire", a.hr, "%", 0],
-    ["Luz", a.luz_lux, "lx", 0],
-    ["Humedad suelo", suelo?.humedad_vol, "%", 0],
-    ["CE suelo", suelo?.conductividad, "µS/cm", 0],
-    ["Temp. suelo", suelo?.temperatura, "°C", 1],
-    ["Lluvia", a.lluvia_mm, "mm", 1],
-    ["Batería", e.bateria_v, "V", 2],
-    ["Señal", e.rssi, "dBm", 0],
-  ];
-
-  return out
-    .filter(([, v]) => typeof v === "number")
-    .map(([k, v, unit, digits]) => [k, `${v!.toFixed(digits)} ${unit}`]);
+interface MonitorProps {
+  devices: MonitorDevice[] | null;
+  error: boolean;
+  updatedAt: Date | null;
+  now: number;
+  /** id de baliza → label, para mostrar nombres legibles. */
+  labels?: Record<string, string>;
 }
 
 export default function Monitor({
+  devices,
+  error,
+  updatedAt,
+  now,
   labels = {},
-}: {
-  /** id de baliza → label, para mostrar nombres legibles. */
-  labels?: Record<string, string>;
-}) {
-  const [devices, setDevices] = useState<MonitorDevice[] | null>(null);
-  const [error, setError] = useState(false);
-  const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
-  const [now, setNow] = useState(() => Date.now());
-
-  useEffect(() => {
-    let cancelled = false;
-    const load = async () => {
-      try {
-        const data = await getMonitor();
-
-        if (cancelled) return;
-        setDevices(data);
-        setError(false);
-        setUpdatedAt(new Date());
-      } catch {
-        if (!cancelled) setError(true);
-      }
-    };
-
-    load();
-    const poll = setInterval(load, POLL_MS);
-    const tick = setInterval(() => setNow(Date.now()), 10_000);
-
-    return () => {
-      cancelled = true;
-      clearInterval(poll);
-      clearInterval(tick);
-    };
-  }, []);
-
+}: MonitorProps) {
   const rows = (devices ?? [])
     .map((d) => {
       const seen = lastSeen(d);
+      const status = deviceStatus(d);
+      // Sin Icinga, se usa la antigüedad del último dato.
+      const online =
+        status === "up" ||
+        (status === "unknown" && seen !== null && now - seen < ONLINE_MS);
 
-      return { d, seen, online: seen !== null && now - seen < ONLINE_MS };
+      return { d, seen, status, online };
     })
     .sort(
       (x, y) =>
+        Number(y.status === "down") - Number(x.status === "down") ||
         Number(y.online) - Number(x.online) ||
         x.d.dispositivo.localeCompare(y.d.dispositivo),
     );
   const onlineCount = rows.filter((r) => r.online).length;
+  const downCount = rows.filter((r) => r.status === "down").length;
 
   return (
     <div className="w-80 h-full shrink-0 p-4 rounded-xl border border-emerald-950/50 bg-[#060e0a]/90 backdrop-blur-md shadow-[0_4px_24px_rgba(0,0,0,0.5)] flex flex-col gap-3">
@@ -116,7 +56,16 @@ export default function Monitor({
           </span>
         </div>
         <span className="text-[11px] font-mono text-zinc-500">
-          {devices ? `${onlineCount}/${rows.length} en línea` : "…"}
+          {devices ? (
+            <>
+              {onlineCount}/{rows.length} en línea
+              {downCount > 0 && (
+                <span className="text-red-400"> · {downCount} down</span>
+              )}
+            </>
+          ) : (
+            "…"
+          )}
         </span>
       </div>
 
@@ -129,26 +78,36 @@ export default function Monitor({
             No hay lecturas en las últimas 24 h.
           </p>
         )}
-        {rows.map(({ d, seen, online }) => {
+        {rows.map(({ d, seen, status, online }) => {
           const m = metrics(d);
+          const down = status === "down";
 
           return (
             <div
               key={d.dispositivo}
-              className={`p-2.5 rounded-lg bg-[#040806] border border-emerald-900/30 ${
-                online ? "" : "opacity-50"
-              }`}
+              className={`p-2.5 rounded-lg bg-[#040806] border ${
+                down ? "border-red-900/70" : "border-emerald-900/30"
+              } ${online || down ? "" : "opacity-50"}`}
             >
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2 min-w-0">
                   <span
                     className={`h-2 w-2 shrink-0 rounded-full ${
-                      online ? "bg-emerald-500" : "bg-zinc-600"
+                      down
+                        ? "bg-red-500"
+                        : online
+                          ? "bg-emerald-500"
+                          : "bg-zinc-600"
                     }`}
                   />
                   <span className="truncate text-sm font-semibold text-zinc-200">
                     {labels[d.dispositivo] || d.dispositivo}
                   </span>
+                  {down && (
+                    <span className="px-1.5 rounded text-[10px] font-bold bg-red-500 text-white">
+                      DOWN
+                    </span>
+                  )}
                   {d.tipo === "puente" && (
                     <span className="px-1.5 rounded text-[10px] bg-zinc-800 text-zinc-400">
                       puente
@@ -183,7 +142,7 @@ export default function Monitor({
       </div>
 
       <div className="pt-3 border-t border-emerald-950/40 text-[11px] text-zinc-500 flex justify-between items-center">
-        <span>InfluxDB</span>
+        <span>InfluxDB · Icinga2</span>
         {error ? (
           <span className="text-red-400">Sin conexión</span>
         ) : (
