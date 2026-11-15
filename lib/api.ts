@@ -184,10 +184,8 @@ export interface CultivoRecomendado {
   siembra: Siembra | null;
 }
 
-/** Lo plantado ahora en la zona: con predicción o fuera del modelo. */
-export type CultivoActual =
-  | (CultivoRecomendado & { balizas: number; fuera_del_modelo?: undefined })
-  | { id: number; balizas: number; fuera_del_modelo: true };
+/** Lo plantado ahora en la zona (solo cultivos del modelo) y en cuántas balizas. */
+export type CultivoActual = CultivoRecomendado & { balizas: number };
 
 export interface ZonaRecomendacion {
   zona: number;

@@ -28,29 +28,6 @@ export const zoneColor = (zona: number) =>
 /** Cultivos que se ven por zona antes de "ver todos". */
 const VISIBLE = 5;
 
-const SEASONS: Record<string, string> = {
-  invierno: "invierno",
-  primavera: "primavera",
-  verano: "verano",
-  otono: "otoño",
-};
-
-/** Nombre legible de una variable del modelo (para "fuera de rango"). */
-function variableName(v: string): string {
-  const [kind, season] = v.split("_");
-  const s = SEASONS[season] ?? season;
-
-  if (v === "ph_suelo") return "pH del suelo";
-  if (v === "hr_media") return "humedad del aire";
-  if (v.startsWith("humedad_suelo"))
-    return `humedad del suelo (${SEASONS[v.split("_")[2]] ?? ""})`;
-  if (kind === "t") return `temperatura de ${s}`;
-  if (kind === "lluvia") return `lluvia de ${s}`;
-  if (kind === "radiacion") return `radiación de ${s}`;
-
-  return v;
-}
-
 const MONTHS = [
   "ene",
   "feb",
@@ -174,10 +151,10 @@ function Zone({
   // Encabezados solo si hay cultivos en época y fuera de ella.
   const grouped =
     zona.cultivos.some(inSeason) && !zona.cultivos.every(inSeason);
-  // Elegidos por el usuario que no se ven en la lista corta.
+  // Elegidos por el usuario (que estén en el modelo) que no se ven en la lista corta.
   const hidden = selected
     .map((id, i) => ({ id, choice: i + 1, rank: ids.indexOf(id) }))
-    .filter((x) => x.rank === -1 || (!all && x.rank >= VISIBLE));
+    .filter((x) => x.rank !== -1 && !all && x.rank >= VISIBLE);
 
   return (
     <div className="p-3 rounded-lg bg-[#040806] border border-emerald-900/30 space-y-2">
@@ -202,21 +179,8 @@ function Zone({
         <p className="text-[11px] text-zinc-400">
           <span className="text-zinc-500">Ahora: </span>
           {zona.cultivos_actuales
-            .map((c) => {
-              const name =
-                ("cultivo" in c && c.cultivo) || cropNames[c.id] || `#${c.id}`;
-
-              return `${name} (${c.balizas})${c.fuera_del_modelo ? " fuera del modelo" : ""}`;
-            })
+            .map((c) => `${c.cultivo} (${c.balizas})`)
             .join(" · ")}
-        </p>
-      )}
-
-      {zona.fuera_de_rango.length > 0 && (
-        <p className="text-[11px] text-amber-400">
-          Fuera de lo visto al entrenar:{" "}
-          {zona.fuera_de_rango.map(variableName).join(", ")}. Ahí el modelo
-          extrapola.
         </p>
       )}
 
@@ -256,10 +220,9 @@ function Zone({
           {hidden.length > 0 && (
             <p className="text-[11px] text-zinc-400">
               {hidden
-                .map(({ id, choice, rank }) =>
-                  rank === -1
-                    ? `Tu #${choice} ${cropNames[id] ?? id}: fuera del modelo`
-                    : `Tu #${choice} ${cropNames[id] ?? id}: puesto ${rank + 1}`,
+                .map(
+                  ({ id, choice, rank }) =>
+                    `Tu #${choice} ${cropNames[id] ?? id}: puesto ${rank + 1}`,
                 )
                 .join(" · ")}
             </p>
