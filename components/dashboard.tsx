@@ -58,9 +58,10 @@ export default function Dashboard({
   backendError = false,
 }: DashboardProps) {
   const [balizas, setBalizas] = useState<Baliza[]>(initialBalizas);
-  // Hasta 3 cultivos en orden de preferencia.
-  // TODO: enviar como parámetro a GET /predictions cuando exista el endpoint.
+  // Cultivos en orden de preferencia y número de zonas.
+  // TODO: enviar como parámetros a GET /predictions cuando exista el endpoint.
   const [selectedCrops, setSelectedCrops] = useState<number[]>([]);
+  const [zoneCount, setZoneCount] = useState(1);
   const [adding, setAdding] = useState(false);
   const [newPoint, setNewPoint] = useState<[number, number] | null>(null);
 
@@ -183,7 +184,11 @@ export default function Dashboard({
         <CropPicker
           crops={crops}
           selected={selectedCrops}
-          onChange={setSelectedCrops}
+          zones={zoneCount}
+          onChange={(ids, zones) => {
+            setSelectedCrops(ids);
+            setZoneCount(zones);
+          }}
         />
         {backendError && (
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[1100] px-3 py-1.5 text-xs rounded-lg bg-red-950/90 text-red-300 border border-red-900">

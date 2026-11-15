@@ -4,22 +4,26 @@ import { useEffect, useMemo, useState } from "react";
 
 import { CropInfo } from "@/lib/api";
 
-export const MAX_CROPS = 3;
+/** Opciones del desplegable de número de zonas. */
+export const ZONE_OPTIONS = Array.from({ length: 10 }, (_, i) => i + 1);
 
 interface CropPickerProps {
   crops: CropInfo[];
-  /** IDs en orden de preferencia (máximo MAX_CROPS). */
+  /** IDs en orden de preferencia. */
   selected: number[];
-  onChange: (ids: number[]) => void;
+  zones: number;
+  onChange: (ids: number[], zones: number) => void;
 }
 
 export default function CropPicker({
   crops,
   selected,
+  zones,
   onChange,
 }: CropPickerProps) {
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<number[]>(selected);
+  const [draftZones, setDraftZones] = useState(zones);
   const [query, setQuery] = useState("");
 
   const byId = useMemo(
@@ -40,12 +44,13 @@ export default function CropPicker({
 
   const openModal = () => {
     setDraft(selected);
+    setDraftZones(zones);
     setQuery("");
     setOpen(true);
   };
 
   const confirm = () => {
-    onChange(draft);
+    onChange(draft, draftZones);
     setOpen(false);
   };
 
@@ -59,15 +64,7 @@ export default function CropPicker({
   }, [open]);
 
   const toggle = (id: number) =>
-    setDraft((d) =>
-      d.includes(id)
-        ? d.filter((x) => x !== id)
-        : d.length < MAX_CROPS
-          ? [...d, id]
-          : d,
-    );
-
-  const full = draft.length >= MAX_CROPS;
+    setDraft((d) => (d.includes(id) ? d.filter((x) => x !== id) : [...d, id]));
 
   return (
     <>
@@ -79,13 +76,14 @@ export default function CropPicker({
         <span className="font-semibold text-emerald-400">
           ¿Qué quieres plantar?
         </span>
-        {selected.length > 0 ? (
+        {selected.length > 0 && (
           <span className="truncate text-zinc-300">
             {selected.map((id) => byId[id]?.cultivo ?? id).join(" · ")}
           </span>
-        ) : (
-          <span className="text-zinc-500">Elige hasta {MAX_CROPS}</span>
         )}
+        <span className="shrink-0 text-zinc-400">
+          {zones} {zones === 1 ? "zona" : "zonas"}
+        </span>
         <span aria-hidden className="text-zinc-500">
           ▾
         </span>
@@ -107,16 +105,27 @@ export default function CropPicker({
           />
           <div className="relative flex flex-col w-full max-w-lg max-h-[80vh] rounded-xl border border-emerald-950/60 bg-[#060e0a]">
             <div className="p-4 space-y-3 border-b border-emerald-950/50">
-              <div>
+              <div className="flex items-center justify-between gap-3">
                 <h2
                   className="text-lg font-bold text-white"
                   id="crop-picker-title"
                 >
                   ¿Qué quieres plantar?
                 </h2>
-                <p className="text-xs text-zinc-400">
-                  Elige hasta {MAX_CROPS} cultivos por orden de preferencia.
-                </p>
+                <label className="flex items-center gap-2 text-sm text-zinc-400">
+                  Número de zonas
+                  <select
+                    className="px-2 py-1 rounded-lg bg-[#040806] border border-emerald-900/40 text-zinc-200 focus:outline-none focus:border-emerald-600"
+                    value={draftZones}
+                    onChange={(e) => setDraftZones(Number(e.target.value))}
+                  >
+                    {ZONE_OPTIONS.map((n) => (
+                      <option key={n} value={n}>
+                        {n}
+                      </option>
+                    ))}
+                  </select>
+                </label>
               </div>
 
               <div className="flex flex-wrap gap-2 min-h-7">
@@ -172,21 +181,13 @@ export default function CropPicker({
                   <ul className="grid grid-cols-2 gap-x-2">
                     {items.map((c) => {
                       const rank = draft.indexOf(c.id);
-                      const disabled = rank === -1 && full;
 
                       return (
                         <li key={c.id}>
-                          <label
-                            className={`flex items-center gap-2 px-2 py-1.5 rounded text-sm ${
-                              disabled
-                                ? "text-zinc-600 cursor-not-allowed"
-                                : "text-zinc-300 hover:bg-emerald-950/50 cursor-pointer"
-                            }`}
-                          >
+                          <label className="flex items-center gap-2 px-2 py-1.5 rounded text-sm text-zinc-300 hover:bg-emerald-950/50 cursor-pointer">
                             <input
                               checked={rank !== -1}
                               className="accent-emerald-500"
-                              disabled={disabled}
                               type="checkbox"
                               onChange={() => toggle(c.id)}
                             />
@@ -205,11 +206,7 @@ export default function CropPicker({
               ))}
             </div>
 
-            <div className="flex items-center justify-between gap-2 p-4 border-t border-emerald-950/50">
-              <span className="text-xs text-zinc-500">
-                {draft.length}/{MAX_CROPS}
-                {full && " · máximo alcanzado"}
-              </span>
+            <div className="flex items-center justify-end gap-2 p-4 border-t border-emerald-950/50">
               <div className="flex gap-2">
                 <button
                   className="px-3 py-1.5 text-sm rounded-lg text-zinc-400 hover:text-zinc-200 disabled:opacity-40"
