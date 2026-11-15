@@ -48,3 +48,51 @@ export async function postBaliza(baliza: BalizaCreate): Promise<void> {
     throw new Error(errorMessage(body, res.status));
   }
 }
+
+export interface SondaSuelo {
+  profundidad_cm: number | string | null;
+  tipo: string | null;
+  humedad_vol?: number;
+  conductividad?: number;
+  temperatura?: number;
+}
+
+/** Última lectura de una baliza (GET /monitor). */
+export interface MonitorDevice {
+  dispositivo: string;
+  tipo: string | null;
+  ultima_lectura: string | null;
+  ultimo_estado: string | null;
+  simulado: boolean;
+  atmosfera: Partial<
+    Record<
+      | "temp_aire"
+      | "hr"
+      | "temp_helada"
+      | "temp_cubierta"
+      | "lluvia_mm"
+      | "hoja_mojada_min"
+      | "luz_lux",
+      number
+    >
+  >;
+  suelo: SondaSuelo[];
+  estado: {
+    bateria_v?: number;
+    rssi?: number;
+    sensores_ok?: number;
+    uptime_s?: number;
+    gateway?: string;
+  };
+}
+
+export async function getMonitor(): Promise<MonitorDevice[]> {
+  const res = await fetch(`${CLIENT_API}/monitor`, { cache: "no-store" });
+
+  if (!res.ok) throw new Error(`Error ${res.status}`);
+
+  return (
+    ((await res.json()) as { dispositivos?: MonitorDevice[] }).dispositivos ??
+    []
+  );
+}

@@ -66,7 +66,11 @@ export default function MapClient({
       zoom,
       scrollWheelZoom: true,
       dragging: true,
+      zoomControl: false,
     });
+
+    // Zoom abajo a la derecha: arriba a la izquierda va "¿Qué quieres plantar?".
+    L.control.zoom({ position: "bottomright" }).addTo(map);
 
     L.tileLayer(
       "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
