@@ -4,9 +4,6 @@ import { ago, deviceStatus, lastSeen, metrics, ONLINE_MS } from "@/lib/monitor";
 interface MonitorProps {
   devices: MonitorDevice[] | null;
   error: boolean;
-  updatedAt: Date | null;
-  /** true si llegan por WebSocket (en vivo); false si es sondeo HTTP. */
-  live?: boolean;
   now: number;
   /** id de baliza → label, para mostrar nombres legibles. */
   labels?: Record<string, string>;
@@ -15,8 +12,6 @@ interface MonitorProps {
 export default function Monitor({
   devices,
   error,
-  updatedAt,
-  live = false,
   now,
   labels = {},
 }: MonitorProps) {
@@ -40,41 +35,9 @@ export default function Monitor({
           labels[y.d.dispositivo] || y.d.dispositivo,
         ),
     );
-  const onlineCount = rows.filter((r) => r.online).length;
-  const downCount = rows.filter((r) => r.status === "down").length;
 
   return (
-    <div className="w-80 h-full shrink-0 p-4 rounded-xl border border-emerald-950/50 bg-[#060e0a]/90 backdrop-blur-md shadow-[0_4px_24px_rgba(0,0,0,0.5)] flex flex-col gap-3">
-      <div className="flex items-center justify-between pb-3 border-b border-emerald-950/40">
-        <div className="flex items-center gap-2">
-          <span className="relative flex h-2 w-2">
-            {onlineCount > 0 && (
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-            )}
-            <span
-              className={`relative inline-flex rounded-full h-2 w-2 ${
-                onlineCount > 0 ? "bg-emerald-500" : "bg-zinc-600"
-              }`}
-            />
-          </span>
-          <span className="text-xs font-semibold tracking-wider uppercase text-emerald-400">
-            Live Monitor
-          </span>
-        </div>
-        <span className="text-[11px] font-mono text-zinc-500">
-          {devices ? (
-            <>
-              {onlineCount}/{rows.length} en línea
-              {downCount > 0 && (
-                <span className="text-red-400"> · {downCount} down</span>
-              )}
-            </>
-          ) : (
-            "…"
-          )}
-        </span>
-      </div>
-
+    <div className="w-80 h-full shrink-0 p-4 rounded-xl border border-emerald-950/50 bg-[#060e0a] flex flex-col gap-3">
       <div className="flex-1 overflow-y-auto -mr-2 pr-2 space-y-2">
         {devices === null && !error && (
           <p className="text-xs text-zinc-500">Cargando lecturas…</p>
@@ -154,23 +117,11 @@ export default function Monitor({
         })}
       </div>
 
-      <div className="pt-3 border-t border-emerald-950/40 text-[11px] text-zinc-500 flex justify-between items-center">
-        <span>
-          InfluxDB · Icinga2 ·{" "}
-          <span className={live ? "text-emerald-400" : "text-zinc-400"}>
-            {live ? "en vivo" : "cada 30 s"}
-          </span>
-        </span>
-        {error ? (
-          <span className="text-red-400">Sin conexión</span>
-        ) : (
-          <span className="text-emerald-500/80">
-            {updatedAt
-              ? `Actualizado ${updatedAt.toLocaleTimeString("es-ES")}`
-              : "Conectando…"}
-          </span>
-        )}
-      </div>
+      {error && (
+        <p className="pt-3 border-t border-emerald-950/40 text-xs text-red-400">
+          Sin conexión con el backend
+        </p>
+      )}
     </div>
   );
 }

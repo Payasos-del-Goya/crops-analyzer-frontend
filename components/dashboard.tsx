@@ -7,7 +7,6 @@ import BalizaForm from "./baliza-form";
 import BalizaPopup from "./baliza-popup";
 import CropPicker from "./crop-picker";
 import Map, { MapLink, MapMarkerData } from "./map";
-import MeshLegend from "./mesh-legend";
 import Monitor from "./monitor";
 
 import { Baliza, BalizaCreate, CropInfo } from "@/lib/api";
@@ -159,7 +158,6 @@ export default function Dashboard({
         zoom={16}
         onMapClick={adding ? (lat, lng) => setNewPoint([lat, lng]) : undefined}
       >
-        <MeshLegend />
         <CropPicker
           crops={crops}
           selected={selectedCrops}
@@ -180,7 +178,7 @@ export default function Dashboard({
           />
         ) : (
           <button
-            className="absolute top-4 right-4 z-[1100] px-3 py-2 text-sm font-semibold rounded-lg bg-emerald-600 text-white shadow-lg hover:bg-emerald-500"
+            className="absolute top-4 right-4 z-[1100] px-3 py-2 text-sm font-semibold rounded-lg bg-emerald-600 text-white hover:bg-emerald-500"
             type="button"
             onClick={() => setAdding(true)}
           >
@@ -192,9 +190,7 @@ export default function Dashboard({
         devices={registeredDevices}
         error={monitor.error}
         labels={labels}
-        live={monitor.live}
         now={monitor.now}
-        updatedAt={monitor.updatedAt}
       />
     </section>
   );

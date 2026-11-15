@@ -92,8 +92,6 @@ export function useMonitor() {
   const [devices, setDevices] = useState<MonitorDevice[] | null>(null);
   const [icingaAvailable, setIcingaAvailable] = useState(true);
   const [error, setError] = useState(false);
-  const [live, setLive] = useState(false);
-  const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
@@ -108,7 +106,6 @@ export function useMonitor() {
       setDevices(data.dispositivos ?? []);
       setIcingaAvailable(data.icinga_disponible !== false);
       setError(false);
-      setUpdatedAt(new Date());
       setNow(Date.now());
     };
 
@@ -132,7 +129,6 @@ export function useMonitor() {
       ws = new WebSocket(monitorSocketUrl());
       ws.onopen = () => {
         backoff = 1_000;
-        setLive(true);
         stopPolling();
       };
       ws.onmessage = (e) => {
@@ -144,7 +140,6 @@ export function useMonitor() {
       };
       ws.onclose = () => {
         if (cancelled) return;
-        setLive(false);
         startPolling();
         retry = setTimeout(connect, backoff);
         backoff = Math.min(backoff * 2, RECONNECT_MAX_MS);
@@ -164,5 +159,5 @@ export function useMonitor() {
     };
   }, []);
 
-  return { devices, icingaAvailable, error, live, updatedAt, now };
+  return { devices, icingaAvailable, error, now };
 }
