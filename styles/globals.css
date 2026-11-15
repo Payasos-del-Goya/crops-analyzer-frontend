@@ -192,3 +192,30 @@ body {
 .labels-hidden .marker-label:not(.is-down) {
   display: none;
 }
+
+/* Crédito de las imágenes (Esri lo exige): pequeño y sin caja blanca.
+   Selector más largo que el de leaflet.css, que se carga después. */
+.leaflet-container .leaflet-control-container .leaflet-control-attribution {
+  background: rgba(3, 20, 12, 0.55);
+  color: rgba(244, 244, 245, 0.55);
+  font-size: 9px;
+  padding: 0 4px;
+}
+.leaflet-container .leaflet-control-container .leaflet-control-attribution a {
+  color: inherit;
+}
+
+/* Nombre del cultivo recomendado en cada zona (map-client.tsx). */
+.zone-label {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  white-space: nowrap;
+  padding: 2px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #ffffff;
+  background: rgba(7, 19, 13, 0.85);
+  border: 2px solid;
+  border-radius: 6px;
+  pointer-events: none;
+}

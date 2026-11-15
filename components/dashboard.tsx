@@ -6,9 +6,9 @@ import { renderToString } from "react-dom/server";
 import BalizaForm from "./baliza-form";
 import BalizaPopup from "./baliza-popup";
 import CropPicker from "./crop-picker";
-import Map, { MapLink, MapMarkerData } from "./map";
+import Map, { MapArea, MapLink, MapMarkerData } from "./map";
 import Monitor from "./monitor";
-import Recomendacion, { zoneColor } from "./recomendacion";
+import Recomendacion, { bestCrop, zoneColor } from "./recomendacion";
 
 import {
   Baliza,
@@ -18,6 +18,7 @@ import {
   Recomendacion as RecomendacionData,
 } from "@/lib/api";
 import { deviceStatus, useMonitor } from "@/lib/monitor";
+import { zoneAreas } from "@/lib/zonas";
 
 /** Distancia en metros entre dos balizas. */
 function distance(a: Baliza, b: Baliza): number {
@@ -103,6 +104,36 @@ export default function Dashboard({
     [panel, rec],
   );
 
+  // Mejor cultivo de cada zona (el mismo que «Mejor opción» en el panel).
+  const zoneBest = useMemo(
+    () =>
+      Object.fromEntries((rec?.zonas ?? []).map((z) => [z.zona, bestCrop(z)])),
+    [rec],
+  );
+
+  // Superficie de cada zona rellena de su color, con el mejor cultivo escrito en medio.
+  const areas = useMemo<MapArea[]>(() => {
+    if (panel !== "recomendacion" || !rec) return [];
+    const points = Object.fromEntries(
+      balizas.map((b) => [b.id, [Number(b.latitud), Number(b.longitud)]]),
+    ) as Record<string, [number, number]>;
+    const shapes = zoneAreas(points, zoneOf);
+
+    return rec.zonas.map((z) => {
+      const shape = shapes[z.zona];
+      const best = zoneBest[z.zona];
+
+      return {
+        color: zoneColor(z.zona),
+        polygons: shape?.polygons ?? [],
+        label:
+          shape && best
+            ? { lat: shape.label[0], lng: shape.label[1], text: best.cultivo }
+            : undefined,
+      };
+    });
+  }, [balizas, panel, rec, zoneBest, zoneOf]);
+
   const markers = useMemo<MapMarkerData[]>(() => {
     return balizas.map((b) => {
       const device = devices[b.id];
@@ -115,6 +146,7 @@ export default function Dashboard({
         variant: deviceStatus(device) === "down" ? "down" : "ok",
         role: device?.tipo === "puente" ? "puente" : "nodo",
         zoneColor: b.id in zoneOf ? zoneColor(zoneOf[b.id]) : undefined,
+        cropId: b.id in zoneOf ? zoneBest[zoneOf[b.id]]?.id : undefined,
         popupHtml: renderToString(
           <BalizaPopup
             baliza={b}
@@ -133,6 +165,7 @@ export default function Dashboard({
     monitor.icingaAvailable,
     monitor.now,
     zoneOf,
+    zoneBest,
   ]);
 
   // Red mesh: ruta real de cada nodo hacia su puente (estado.gateway) y
@@ -264,6 +297,7 @@ export default function Dashboard({
   return (
     <section className="flex items-stretch justify-center gap-4 w-full h-[calc(100vh-5rem)] p-4">
       <Map
+        areas={areas}
         center={[41.685, -0.887]}
         links={links}
         markers={markers}

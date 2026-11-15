@@ -132,13 +132,19 @@ function CropRow({
   );
 }
 
-/** Lo plantado ahora en la zona frente a la mejor opción del modelo. */
-function Comparison({ zona }: { zona: ZonaRecomendacion }) {
-  // La mejor por puntuación entre todos los cultivos (sin mirar la época).
-  const best = zona.cultivos.reduce<CultivoRecomendado | undefined>(
+/** Mejor opción de la zona: la de más puntuación entre todos los cultivos (sin mirar la época). */
+export function bestCrop(
+  zona: ZonaRecomendacion,
+): CultivoRecomendado | undefined {
+  return zona.cultivos.reduce<CultivoRecomendado | undefined>(
     (top, c) => (!top || c.puntuacion > top.puntuacion ? c : top),
     undefined,
   );
+}
+
+/** Lo plantado ahora en la zona frente a la mejor opción del modelo. */
+function Comparison({ zona }: { zona: ZonaRecomendacion }) {
+  const best = bestCrop(zona);
 
   if (!best) return null;
   const bestPlanted = zona.cultivos_actuales.find((c) => c.id === best.id);
