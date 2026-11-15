@@ -205,17 +205,3 @@ body {
   color: inherit;
 }
 
-/* Nombre del cultivo recomendado en cada zona (map-client.tsx). */
-.zone-label {
-  position: absolute;
-  transform: translate(-50%, -50%);
-  white-space: nowrap;
-  padding: 2px 8px;
-  font-size: 12px;
-  font-weight: 600;
-  color: #ffffff;
-  background: rgba(7, 19, 13, 0.85);
-  border: 2px solid;
-  border-radius: 6px;
-  pointer-events: none;
-}

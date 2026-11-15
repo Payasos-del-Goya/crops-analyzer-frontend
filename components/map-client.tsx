@@ -77,6 +77,13 @@ function markerIcon(
 
 const LABEL_MIN_ZOOM = 17;
 
+// Estilo en línea (no en globals.css): así no depende de que el navegador
+// haya recargado la hoja de estilos.
+const ZONE_LABEL_STYLE =
+  "position:absolute;transform:translate(-50%,-50%);white-space:nowrap;" +
+  "padding:2px 8px;font-size:12px;font-weight:600;line-height:1.4;color:#fff;" +
+  "background:rgba(7,19,13,0.85);border:2px solid;border-radius:6px;pointer-events:none;";
+
 const escapeHtml = (s: string) =>
   s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
@@ -250,7 +257,7 @@ export default function MapClient({
       if (!a.label) return;
       L.marker([a.label.lat, a.label.lng], {
         icon: L.divIcon({
-          html: `<span class="zone-label" style="border-color:${a.color}">${escapeHtml(a.label.text)}</span>`,
+          html: `<span style="${ZONE_LABEL_STYLE}border-color:${a.color}">${escapeHtml(a.label.text)}</span>`,
           className: "",
           iconSize: [0, 0],
         }),
