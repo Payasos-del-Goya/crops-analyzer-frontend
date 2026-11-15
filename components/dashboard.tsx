@@ -1,13 +1,16 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { renderToString } from "react-dom/server";
 
 import BalizaForm from "./baliza-form";
+import BalizaPopup from "./baliza-popup";
 import CropPicker from "./crop-picker";
 import Map, { MapMarkerData } from "./map";
 import Monitor from "./monitor";
 
 import { Baliza, BalizaCreate, CropInfo } from "@/lib/api";
+import { deviceStatus, useMonitor } from "@/lib/monitor";
 
 interface DashboardProps {
   initialBalizas: Baliza[];
@@ -27,15 +30,34 @@ export default function Dashboard({
   const [adding, setAdding] = useState(false);
   const [newPoint, setNewPoint] = useState<[number, number] | null>(null);
 
-  const markers = useMemo<MapMarkerData[]>(
-    () =>
-      balizas.map((b) => ({
-        lat: b.latitud,
-        lng: b.longitud,
+  const monitor = useMonitor();
+
+  const markers = useMemo<MapMarkerData[]>(() => {
+    const devices = Object.fromEntries(
+      (monitor.devices ?? []).map((d) => [d.dispositivo, d]),
+    );
+    const cropsById = Object.fromEntries(crops.map((c) => [c.id, c]));
+
+    return balizas.map((b) => {
+      const device = devices[b.id];
+
+      return {
+        id: b.id,
+        lat: Number(b.latitud),
+        lng: Number(b.longitud),
         label: b.label || b.id,
-      })),
-    [balizas],
-  );
+        variant: deviceStatus(device) === "down" ? "down" : "ok",
+        popupHtml: renderToString(
+          <BalizaPopup
+            baliza={b}
+            crop={b.cultivo_id != null ? cropsById[b.cultivo_id] : undefined}
+            device={device}
+            now={monitor.now}
+          />,
+        ),
+      };
+    });
+  }, [balizas, crops, monitor.devices, monitor.now]);
 
   const labels = useMemo(
     () =>
@@ -93,7 +115,13 @@ export default function Dashboard({
           </button>
         )}
       </Map>
-      <Monitor labels={labels} />
+      <Monitor
+        devices={monitor.devices}
+        error={monitor.error}
+        labels={labels}
+        now={monitor.now}
+        updatedAt={monitor.updatedAt}
+      />
     </section>
   );
 }

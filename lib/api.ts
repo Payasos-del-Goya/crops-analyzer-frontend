@@ -64,6 +64,12 @@ export interface MonitorDevice {
   ultima_lectura: string | null;
   ultimo_estado: string | null;
   simulado: boolean;
+  /** Estado del host en Icinga2; null si Icinga no vigila esta baliza. */
+  icinga: {
+    estado: "UP" | "DOWN" | null;
+    alcanzable: boolean | null;
+    comprobado: string | null;
+  } | null;
   atmosfera: Partial<
     Record<
       | "temp_aire"

@@ -4,13 +4,16 @@ import { useEffect, useRef } from "react";
 import { renderToString } from "react-dom/server";
 import L from "leaflet";
 
-import MapMarkerComponent from "./map-marker";
+import MapMarkerComponent, { MarkerVariant } from "./map-marker";
 
 export interface MapMarkerData {
+  /** Identificador estable: permite mantener abierto su popup al refrescar. */
+  id?: string;
   lat: number;
   lng: number;
   label?: string;
   popupHtml?: string;
+  variant?: MarkerVariant;
 }
 
 export interface MapClientProps {
@@ -27,10 +30,10 @@ export interface MapClientProps {
   onMapClick?: (lat: number, lng: number) => void;
 }
 
-function markerIcon(label?: string, pending = false) {
+function markerIcon(label?: string, variant: MarkerVariant = "ok") {
   return L.divIcon({
     html: renderToString(
-      <MapMarkerComponent label={label} pending={pending} />,
+      <MapMarkerComponent label={label} variant={variant} />,
     ),
     className: "",
     iconSize: [32, 48],
@@ -54,6 +57,9 @@ export default function MapClient({
   const mapRef = useRef<L.Map | null>(null);
   const layerRef = useRef<L.LayerGroup | null>(null);
   const onMapClickRef = useRef(onMapClick);
+  // Popup abierto, para reabrirlo cuando los marcadores se redibujan.
+  const openPopupIdRef = useRef<string | null>(null);
+  const redrawingRef = useRef(false);
 
   onMapClickRef.current = onMapClick;
 
@@ -107,7 +113,11 @@ export default function MapClient({
     const layer = layerRef.current;
 
     if (!layer) return;
+    const reopenId = openPopupIdRef.current;
+
+    redrawingRef.current = true;
     layer.clearLayers();
+    redrawingRef.current = false;
 
     if (showPolygon && markers.length >= 3) {
       L.polygon(
@@ -123,15 +133,22 @@ export default function MapClient({
 
     markers.forEach((m) => {
       const marker = L.marker([m.lat, m.lng], {
-        icon: markerIcon(m.label),
+        icon: markerIcon(m.label, m.variant),
+        zIndexOffset: m.variant === "down" ? 1000 : 0,
       }).addTo(layer);
 
-      if (m.popupHtml) marker.bindPopup(m.popupHtml);
+      if (!m.popupHtml) return;
+      marker.bindPopup(m.popupHtml, { maxWidth: 300 });
+      marker.on("popupopen", () => (openPopupIdRef.current = m.id ?? null));
+      marker.on("popupclose", () => {
+        if (!redrawingRef.current) openPopupIdRef.current = null;
+      });
+      if (m.id && m.id === reopenId) marker.openPopup();
     });
 
     if (pendingPoint) {
       L.marker(pendingPoint, {
-        icon: markerIcon("Nueva", true),
+        icon: markerIcon("Nueva", "pending"),
         interactive: false,
       }).addTo(layer);
     }
