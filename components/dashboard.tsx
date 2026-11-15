@@ -92,6 +92,14 @@ export default function Dashboard({
     return out;
   }, [balizas, devices]);
 
+  // En el monitor solo las balizas registradas en PostgreSQL: los nombres
+  // antiguos que siguen en InfluxDB (b01..b03...) ya no existen.
+  const registeredDevices = useMemo(() => {
+    const ids = new Set(balizas.map((b) => b.id));
+
+    return monitor.devices?.filter((d) => ids.has(d.dispositivo)) ?? null;
+  }, [balizas, monitor.devices]);
+
   const labels = useMemo(
     () =>
       Object.fromEntries(
@@ -150,7 +158,7 @@ export default function Dashboard({
         )}
       </Map>
       <Monitor
-        devices={monitor.devices}
+        devices={registeredDevices}
         error={monitor.error}
         labels={labels}
         now={monitor.now}

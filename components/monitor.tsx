@@ -78,7 +78,7 @@ export default function Monitor({
         )}
         {devices?.length === 0 && (
           <p className="text-xs text-zinc-500">
-            No hay lecturas en las últimas 24 h.
+            Ninguna baliza registrada tiene lecturas en las últimas 24 h.
           </p>
         )}
         {rows.map(({ d, seen, status, online }) => {
