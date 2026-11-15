@@ -19,6 +19,8 @@ export interface MapMarkerData {
   popupHtml?: string;
   variant?: MarkerVariant;
   role?: MarkerRole;
+  /** Color de su zona en la recomendación. */
+  zoneColor?: string;
 }
 
 /** Enlace de la red mesh entre dos marcadores (por id). */
@@ -47,10 +49,16 @@ function markerIcon(
   label?: string,
   variant: MarkerVariant = "ok",
   role: MarkerRole = "nodo",
+  zoneColor?: string,
 ) {
   return L.divIcon({
     html: renderToString(
-      <MapMarkerComponent label={label} role={role} variant={variant} />,
+      <MapMarkerComponent
+        label={label}
+        role={role}
+        variant={variant}
+        zoneColor={zoneColor}
+      />,
     ),
     className: "",
     iconSize: [MARKER_SIZE, MARKER_SIZE],
@@ -199,7 +207,7 @@ export default function MapClient({
 
     markers.forEach((m) => {
       const marker = L.marker([m.lat, m.lng], {
-        icon: markerIcon(m.label, m.variant, m.role),
+        icon: markerIcon(m.label, m.variant, m.role, m.zoneColor),
         zIndexOffset: m.variant === "down" ? 1000 : 0,
       }).addTo(layer);
 

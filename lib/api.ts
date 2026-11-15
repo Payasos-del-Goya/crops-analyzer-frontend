@@ -156,3 +156,79 @@ export function monitorSocketUrl(): string {
 
   return `${proto}//${window.location.host}${CLIENT_API}/ws/monitor`;
 }
+
+/** Época de siembra de un cultivo en la zona (calendario GGCMI). */
+export interface Siembra {
+  siembra: string; // MM-DD
+  cosecha: string; // MM-DD
+  dias_para_siembra: number;
+  en_epoca: boolean;
+  fuente: string;
+}
+
+/** Un cultivo recomendado por el modelo (GET /recomendacion). */
+export interface CultivoRecomendado {
+  id: number;
+  cultivo: string;
+  /** cuota × ventaja: el criterio de orden. */
+  puntuacion: number;
+  /** % de la tierra que dedican a este cultivo las regiones con este clima. */
+  cuota_pct: number;
+  ventaja: number;
+  rendimiento_t_ha: number;
+  rendimiento_relativo: number;
+  precio_eur_t: number | null;
+  precio_relativo: number | null;
+  ingreso_bruto_eur_ha: number | null;
+  fuente_precio: string | null;
+  siembra: Siembra | null;
+}
+
+/** Lo plantado ahora en la zona: con predicción o fuera del modelo. */
+export type CultivoActual =
+  | (CultivoRecomendado & { balizas: number; fuera_del_modelo?: undefined })
+  | { id: number; balizas: number; fuera_del_modelo: true };
+
+export interface ZonaRecomendacion {
+  zona: number;
+  balizas: string[];
+  centro: { latitud: number; longitud: number };
+  /** null si falta el clima de algún mes (Meteomatics caído). */
+  variables: Record<string, number | null> | null;
+  /** Variables fuera de lo visto al entrenar: el modelo extrapola. */
+  fuera_de_rango: string[];
+  cultivos_actuales: CultivoActual[];
+  cultivos: CultivoRecomendado[];
+}
+
+export interface Recomendacion {
+  modelo: {
+    datos: string;
+    cultivos: number;
+    sklearn: string;
+    entrenado_al_arrancar: boolean;
+  };
+  meteomatics_disponible: boolean;
+  eurostat_disponible: boolean;
+  pais: string;
+  orden: string;
+  fecha: string;
+  epoca: string;
+  zonas: ZonaRecomendacion[];
+}
+
+/** Cultivos recomendados por zona con el modelo entrenado (todos: top=0). */
+export async function getRecomendacion(zonas: number): Promise<Recomendacion> {
+  const res = await fetch(`${CLIENT_API}/recomendacion?n=${zonas}&top=0`, {
+    cache: "no-store",
+  });
+
+  toLogin(res);
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+
+    throw new Error(errorMessage(body, res.status));
+  }
+
+  return (await res.json()) as Recomendacion;
+}

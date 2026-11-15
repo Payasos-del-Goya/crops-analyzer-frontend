@@ -60,10 +60,13 @@ export default function MapMarker({
   label,
   variant = "ok",
   role = "nodo",
+  zoneColor,
 }: {
   label?: string;
   variant?: MarkerVariant;
   role?: MarkerRole;
+  /** Color de la zona de la recomendación (el borde); DOWN sigue en rojo. */
+  zoneColor?: string;
 }) {
   const c = COLORS[variant];
   const shape = role === "puente" ? "rounded-xl" : "rounded-full";
@@ -72,7 +75,12 @@ export default function MapMarker({
     <div className="relative flex flex-col items-center">
       <div className="relative flex items-center justify-center w-10 h-10">
         <div
-          className={`relative flex items-center justify-center w-9 h-9 ${shape} border-2 ${c.ring} ${c.glyph} bg-[#07130d]`}
+          className={`relative flex items-center justify-center w-9 h-9 ${shape} ${zoneColor && variant === "ok" ? "border-[3px]" : `border-2 ${c.ring}`} ${c.glyph} bg-[#07130d]`}
+          style={
+            zoneColor && variant === "ok"
+              ? { borderColor: zoneColor, color: zoneColor }
+              : undefined
+          }
         >
           <Glyph role={role} />
         </div>

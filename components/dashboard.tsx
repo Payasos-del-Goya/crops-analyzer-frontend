@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { renderToString } from "react-dom/server";
 
 import BalizaForm from "./baliza-form";
@@ -8,8 +8,15 @@ import BalizaPopup from "./baliza-popup";
 import CropPicker from "./crop-picker";
 import Map, { MapLink, MapMarkerData } from "./map";
 import Monitor from "./monitor";
+import Recomendacion, { zoneColor } from "./recomendacion";
 
-import { Baliza, BalizaCreate, CropInfo } from "@/lib/api";
+import {
+  Baliza,
+  BalizaCreate,
+  CropInfo,
+  getRecomendacion,
+  Recomendacion as RecomendacionData,
+} from "@/lib/api";
 import { deviceStatus, useMonitor } from "@/lib/monitor";
 
 /** Distancia en metros entre dos balizas. */
@@ -59,9 +66,14 @@ export default function Dashboard({
 }: DashboardProps) {
   const [balizas, setBalizas] = useState<Baliza[]>(initialBalizas);
   // Cultivos en orden de preferencia y número de zonas.
-  // TODO: enviar como parámetros a GET /predictions cuando exista el endpoint.
   const [selectedCrops, setSelectedCrops] = useState<number[]>([]);
   const [zoneCount, setZoneCount] = useState(1);
+  // Recomendación del modelo (GET /recomendacion) para ese número de zonas.
+  const [rec, setRec] = useState<RecomendacionData | null>(null);
+  const [recLoading, setRecLoading] = useState(false);
+  const [recError, setRecError] = useState<string | null>(null);
+  const [panel, setPanel] = useState<"monitor" | "recomendacion">("monitor");
+  const recRequest = useRef(0);
   const [adding, setAdding] = useState(false);
   const [newPoint, setNewPoint] = useState<[number, number] | null>(null);
 
@@ -80,6 +92,17 @@ export default function Dashboard({
     [crops],
   );
 
+  // Zona de cada baliza en la recomendación, para colorearla en el mapa.
+  const zoneOf = useMemo(
+    () =>
+      Object.fromEntries(
+        (panel === "recomendacion" ? (rec?.zonas ?? []) : []).flatMap((z) =>
+          z.balizas.map((b) => [b, z.zona]),
+        ),
+      ) as Record<string, number>,
+    [panel, rec],
+  );
+
   const markers = useMemo<MapMarkerData[]>(() => {
     return balizas.map((b) => {
       const device = devices[b.id];
@@ -91,6 +114,7 @@ export default function Dashboard({
         label: b.label || b.id,
         variant: deviceStatus(device) === "down" ? "down" : "ok",
         role: device?.tipo === "puente" ? "puente" : "nodo",
+        zoneColor: b.id in zoneOf ? zoneColor(zoneOf[b.id]) : undefined,
         popupHtml: renderToString(
           <BalizaPopup
             baliza={b}
@@ -102,7 +126,14 @@ export default function Dashboard({
         ),
       };
     });
-  }, [balizas, cropNames, devices, monitor.icingaAvailable, monitor.now]);
+  }, [
+    balizas,
+    cropNames,
+    devices,
+    monitor.icingaAvailable,
+    monitor.now,
+    zoneOf,
+  ]);
 
   // Red mesh: ruta real de cada nodo hacia su puente (estado.gateway) y
   // enlaces de malla entre nodos cercanos del mismo puente. Se omite un
@@ -180,6 +211,46 @@ export default function Dashboard({
     [balizas],
   );
 
+  const recommend = (zones: number) => {
+    const id = ++recRequest.current;
+
+    setPanel("recomendacion");
+    setRecLoading(true);
+    setRecError(null);
+    getRecomendacion(zones)
+      .then((data) => id === recRequest.current && setRec(data))
+      .catch(
+        (e: Error) =>
+          id === recRequest.current &&
+          setRecError(`No se pudo calcular la recomendación: ${e.message}`),
+      )
+      .finally(() => id === recRequest.current && setRecLoading(false));
+  };
+
+  const tabs = (rec || recLoading || recError) && (
+    <div className="flex gap-1 p-0.5 rounded-lg bg-[#040806] border border-emerald-950/60 text-xs">
+      {(
+        [
+          ["recomendacion", "Recomendación"],
+          ["monitor", "Monitor"],
+        ] as const
+      ).map(([key, label]) => (
+        <button
+          key={key}
+          className={`flex-1 px-2 py-1 rounded-md ${
+            panel === key
+              ? "bg-emerald-900/60 text-zinc-100"
+              : "text-zinc-400 hover:text-zinc-200"
+          }`}
+          type="button"
+          onClick={() => setPanel(key)}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+
   const closeForm = () => {
     setAdding(false);
     setNewPoint(null);
@@ -208,6 +279,10 @@ export default function Dashboard({
           onChange={(ids, zones) => {
             setSelectedCrops(ids);
             setZoneCount(zones);
+            // Solo se recalcula si cambian las zonas: los cultivos elegidos se
+            // marcan sobre la lista completa que ya ha llegado.
+            if (zones !== zoneCount || (!rec && !recLoading)) recommend(zones);
+            else setPanel("recomendacion");
           }}
         />
         {backendError && (
@@ -233,12 +308,29 @@ export default function Dashboard({
           </button>
         )}
       </Map>
-      <Monitor
-        devices={registeredDevices}
-        error={monitor.error}
-        labels={labels}
-        now={monitor.now}
-      />
+      {panel === "recomendacion" ? (
+        <div className="w-80 h-full shrink-0 p-4 rounded-xl border border-emerald-950/50 bg-[#060e0a] flex flex-col gap-3">
+          {tabs}
+          <div className="flex-1 overflow-y-auto -mr-2 pr-2">
+            <Recomendacion
+              cropNames={cropNames}
+              data={rec}
+              error={recError}
+              labels={labels}
+              loading={recLoading}
+              selected={selectedCrops}
+            />
+          </div>
+        </div>
+      ) : (
+        <Monitor
+          devices={registeredDevices}
+          error={monitor.error}
+          header={tabs}
+          labels={labels}
+          now={monitor.now}
+        />
+      )}
     </section>
   );
 }
