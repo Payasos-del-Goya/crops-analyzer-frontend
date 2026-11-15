@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { Button, Kbd, Link, TextField, InputGroup } from "@heroui/react";
 import NextLink from "next/link";
 import clsx from "clsx";
 
@@ -11,11 +10,10 @@ export const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   return (
-    <nav className="sticky top-0 z-40 w-full border-b border-emerald-950/40 bg-[#050a08]/80 backdrop-blur-lg">
+    <nav className="sticky top-0 z-40 w-full border-b border-emerald-950/40 bg-[#050a08]">
       <header className="mx-auto flex h-16 max-w-[1280px] items-center justify-between gap-4 px-6">
         <div className="flex items-center gap-4">
           <NextLink className="flex items-center gap-2 group" href="/">
-            <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(34,197,94,0.6)] group-hover:scale-125 transition-transform" />
             <p className="font-bold tracking-tight text-white group-hover:text-emerald-400 transition-colors">
               Crop Catcher
             </p>
@@ -72,8 +70,7 @@ export const Navbar = () => {
 
       {isMenuOpen && (
         <div className="border-t border-separator sm:hidden">
-          <ul className="flex flex-col gap-2 px-4 pb-4">
-          </ul>
+          <ul className="flex flex-col gap-2 px-4 pb-4" />
         </div>
       )}
     </nav>

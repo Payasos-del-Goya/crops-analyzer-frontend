@@ -72,7 +72,7 @@ export default function CropPicker({
   return (
     <>
       <button
-        className="absolute top-4 left-4 z-[1100] max-w-[calc(100%-12rem)] flex items-center gap-2 px-3 py-2 rounded-lg border border-emerald-900/50 bg-[#060e0a]/90 backdrop-blur-md text-sm text-zinc-200 shadow-lg hover:border-emerald-600"
+        className="absolute top-4 left-4 z-[1100] max-w-[calc(100%-12rem)] flex items-center gap-2 px-3 py-2 rounded-lg border border-emerald-900/50 bg-[#060e0a] text-sm text-zinc-200 hover:border-emerald-600"
         type="button"
         onClick={openModal}
       >
@@ -105,7 +105,7 @@ export default function CropPicker({
             type="button"
             onClick={() => setOpen(false)}
           />
-          <div className="relative flex flex-col w-full max-w-lg max-h-[80vh] rounded-xl border border-emerald-950/60 bg-[#060e0a] shadow-[0_8px_40px_rgba(0,0,0,0.7)]">
+          <div className="relative flex flex-col w-full max-w-lg max-h-[80vh] rounded-xl border border-emerald-950/60 bg-[#060e0a]">
             <div className="p-4 space-y-3 border-b border-emerald-950/50">
               <div>
                 <h2

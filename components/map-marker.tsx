@@ -2,24 +2,18 @@ export type MarkerVariant = "ok" | "down" | "pending";
 export type MarkerRole = "nodo" | "puente";
 
 // Clases completas (no interpoladas) para que Tailwind las detecte.
-const COLORS: Record<
-  MarkerVariant,
-  { ring: string; glyph: string; halo: string }
-> = {
+const COLORS: Record<MarkerVariant, { ring: string; glyph: string }> = {
   ok: {
     ring: "border-emerald-400",
     glyph: "text-emerald-300",
-    halo: "bg-emerald-400/40",
   },
   down: {
     ring: "border-red-500",
     glyph: "text-red-400",
-    halo: "bg-red-500/50",
   },
   pending: {
     ring: "border-amber-400",
     glyph: "text-amber-300",
-    halo: "bg-amber-400/40",
   },
 };
 
@@ -77,18 +71,14 @@ export default function MapMarker({
   return (
     <div className="relative flex flex-col items-center">
       <div className="relative flex items-center justify-center w-10 h-10">
-        <span
-          aria-hidden
-          className={`absolute inset-0 ${shape} ${c.halo} baliza-halo`}
-        />
         <div
-          className={`relative flex items-center justify-center w-9 h-9 ${shape} border-2 ${c.ring} ${c.glyph} bg-[#07130d]/95 shadow-[0_0_12px_rgba(0,0,0,0.7)]`}
+          className={`relative flex items-center justify-center w-9 h-9 ${shape} border-2 ${c.ring} ${c.glyph} bg-[#07130d]`}
         >
           <Glyph role={role} />
         </div>
       </div>
       {label && (
-        <span className="absolute top-full mt-1 flex items-center gap-1 px-2 py-0.5 text-xs font-semibold bg-[#07130d]/90 text-white border border-white/10 rounded-md whitespace-nowrap shadow">
+        <span className="absolute top-full mt-1 flex items-center gap-1 px-2 py-0.5 text-xs font-semibold bg-[#07130d]/90 text-white border border-white/10 rounded-md whitespace-nowrap">
           {label}
           {variant === "down" && (
             <span className="px-1 rounded bg-red-500 text-[10px] font-bold text-white">

@@ -64,7 +64,7 @@ export default function BalizaForm({
 
   return (
     <form
-      className="absolute top-4 right-4 z-[1100] w-72 p-4 rounded-xl border border-emerald-950/50 bg-[#060e0a]/95 backdrop-blur-md shadow-[0_4px_24px_rgba(0,0,0,0.6)] space-y-3"
+      className="absolute top-4 right-4 z-[1100] w-72 p-4 rounded-xl border border-emerald-950/50 bg-[#060e0a] space-y-3"
       onSubmit={handleSubmit}
     >
       <div className="flex items-center justify-between">

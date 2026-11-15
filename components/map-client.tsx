@@ -77,15 +77,6 @@ const LINK_STYLE: Record<"route" | "mesh" | "down", L.PolylineOptions> = {
   },
   down: { color: "#f87171", weight: 3, opacity: 0.95, dashArray: "6 6" },
 };
-/** Paquetes que "viajan" por la ruta hacia el puente (animación CSS). */
-const ROUTE_FLOW: L.PolylineOptions = {
-  color: "#ecfdf5",
-  weight: 2,
-  opacity: 0.9,
-  dashArray: "2 12",
-  lineCap: "round",
-  className: "mesh-route",
-};
 
 export default function MapClient({
   center = [41.683298, -0.88442],
@@ -142,6 +133,7 @@ export default function MapClient({
 
     mapRef.current = map;
     layerRef.current = L.layerGroup().addTo(map);
+    fittedRef.current = false; // mapa nuevo (p. ej. remontaje en dev): volver a encuadrar
 
     const timer = setTimeout(() => map.invalidateSize(), 200);
 
@@ -182,8 +174,6 @@ export default function MapClient({
           interactive: false,
         }).addTo(layer);
         L.polyline(line, { ...style, interactive: false }).addTo(layer);
-        if (l.kind === "route" && !l.down)
-          L.polyline(line, { ...ROUTE_FLOW, interactive: false }).addTo(layer);
       });
 
     // Encuadrar las balizas la primera vez que llegan.
