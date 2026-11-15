@@ -128,6 +128,10 @@ export interface MonitorDevice {
     sensores_ok?: number;
     uptime_s?: number;
     gateway?: string;
+    /** Siguiente baliza en el camino hacia el puente (si no se manda, va directa a `gateway`). */
+    salto?: string;
+    /** Balizas vecinas en la malla, separadas por comas (si se manda, son los enlaces de malla). */
+    vecinos?: string;
   };
 }
 

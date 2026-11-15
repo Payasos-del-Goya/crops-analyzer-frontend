@@ -187,3 +187,8 @@ body {
 .leaflet-container a.leaflet-popup-close-button:hover {
   color: #ffffff;
 }
+
+/* Ver LABEL_MIN_ZOOM en map-client.tsx */
+.labels-hidden .marker-label:not(.is-down) {
+  display: none;
+}

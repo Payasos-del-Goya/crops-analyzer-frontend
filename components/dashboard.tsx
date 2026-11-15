@@ -112,7 +112,9 @@ export default function Dashboard({
     const byId = Object.fromEntries(balizas.map((b) => [b.id, b]));
     const ids = balizas.map((b) => b.id);
     const isDown = (id: string) => deviceStatus(devices[id]) === "down";
-    const gateway = (id: string) => devices[id]?.estado.gateway;
+    // Siguiente salto hacia el puente: `salto` si la baliza lo manda, si no el puente.
+    const gateway = (id: string) =>
+      devices[id]?.estado.salto ?? devices[id]?.estado.gateway;
     const out: MapLink[] = [];
 
     ids.forEach((id) => {
@@ -121,6 +123,24 @@ export default function Dashboard({
       if (gw && gw !== id && byId[gw])
         out.push({ from: id, to: gw, kind: "route", down: isDown(id) });
     });
+
+    // Si las balizas dicen quiénes son sus vecinas, la malla son esos enlaces.
+    if (ids.some((id) => devices[id]?.estado.vecinos)) {
+      ids.forEach((a) =>
+        (devices[a]?.estado.vecinos ?? "").split(",").forEach((b) => {
+          if (!byId[b] || a >= b) return;
+          if (gateway(a) === b || gateway(b) === a) return;
+          out.push({
+            from: a,
+            to: b,
+            kind: "mesh",
+            down: isDown(a) || isDown(b),
+          });
+        }),
+      );
+
+      return out;
+    }
 
     ids.forEach((a, i) =>
       ids.slice(i + 1).forEach((b) => {
