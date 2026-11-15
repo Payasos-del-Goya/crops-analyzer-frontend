@@ -1,32 +1,39 @@
-import { Baliza, CropInfo, MonitorDevice } from "@/lib/api";
-import { ago, deviceStatus, lastSeen, metrics } from "@/lib/monitor";
+import { Baliza, MonitorDevice } from "@/lib/api";
+import {
+  ago,
+  devicePresence,
+  lastSeen,
+  metrics,
+  Presence,
+} from "@/lib/monitor";
 
 // Colores con contraste AA sobre el fondo oscuro del popup.
-const STATUS = {
+const PRESENCE: Record<Presence, { text: string; cls: string }> = {
   up: { text: "UP", cls: "bg-emerald-400 text-emerald-950" },
   down: { text: "DOWN", cls: "bg-red-500 text-white" },
-  unknown: { text: "SIN DATOS", cls: "bg-zinc-600 text-white" },
+  online: { text: "EN LÍNEA", cls: "bg-emerald-400 text-emerald-950" },
+  offline: { text: "SIN SEÑAL", cls: "bg-zinc-600 text-white" },
 };
 
 /** Contenido del popup de una baliza (se renderiza a HTML para Leaflet). */
 export default function BalizaPopup({
   baliza,
-  crop,
   device,
+  icingaAvailable,
   now,
 }: {
   baliza: Baliza;
-  crop?: CropInfo;
   device?: MonitorDevice;
+  /** false si el backend no puede leer Icinga. */
+  icingaAvailable: boolean;
   now: number;
 }) {
-  const statusKey = deviceStatus(device);
-  const status = STATUS[statusKey];
+  const presence = devicePresence(device, now);
+  const badge = PRESENCE[presence];
   const seen = device ? lastSeen(device) : null;
   const checked = device?.icinga?.comprobado;
   const e = device?.estado;
   const rows: [string, string][] = [
-    ["Cultivo", crop ? `${crop.cultivo} (${crop.grupo})` : "Sin asignar"],
     ["Última lectura", seen ? ago(now - seen) : "Nunca"],
     ...(device ? metrics(device) : []),
   ];
@@ -36,6 +43,14 @@ export default function BalizaPopup({
   if (e?.uptime_s !== undefined)
     rows.push(["Encendida", ago(e.uptime_s * 1000).replace("hace ", "")]);
   if (e?.gateway && e.gateway !== baliza.id) rows.push(["Puente", e.gateway]);
+
+  let source: string;
+
+  if (checked)
+    source = `Icinga · comprobado ${ago(now - new Date(checked).getTime())}`;
+  else if (!icingaAvailable)
+    source = "Estado de Icinga no disponible · según los datos recibidos";
+  else source = "Sin resultado reciente de Icinga · según los datos recibidos";
 
   return (
     <div className="w-64 font-sans text-zinc-100">
@@ -51,20 +66,18 @@ export default function BalizaPopup({
           </p>
         </div>
         <span
-          className={`shrink-0 px-2 py-0.5 rounded text-xs font-bold ${status.cls}`}
+          className={`shrink-0 px-2 py-0.5 rounded text-xs font-bold ${badge.cls}`}
         >
-          {status.text}
+          {badge.text}
         </span>
       </div>
 
       <p
         className={`mt-2 text-xs ${
-          statusKey === "down" ? "text-red-300" : "text-zinc-300"
+          presence === "down" ? "text-red-300" : "text-zinc-300"
         }`}
       >
-        {checked
-          ? `Icinga · comprobado ${ago(now - new Date(checked).getTime())}`
-          : "Icinga no vigila esta baliza"}
+        {source}
         {device?.icinga?.alcanzable === false &&
           " · inalcanzable (falla el puente)"}
       </p>

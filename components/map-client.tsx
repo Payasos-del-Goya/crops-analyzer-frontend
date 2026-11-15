@@ -59,16 +59,32 @@ function markerIcon(
   });
 }
 
-const LINK_STYLE: Record<string, L.PolylineOptions> = {
-  route: { color: "#34d399", weight: 3, opacity: 0.9, className: "mesh-route" },
+// Todas las líneas llevan un "borde" oscuro debajo para verse igual sobre
+// cualquier fondo del satélite.
+const CASING: L.PolylineOptions = {
+  color: "#03140c",
+  opacity: 0.6,
+  lineCap: "round",
+};
+const LINK_STYLE: Record<"route" | "mesh" | "down", L.PolylineOptions> = {
+  route: { color: "#10b981", weight: 4, opacity: 1, lineCap: "round" },
   mesh: {
-    color: "#d1fae5",
-    weight: 3,
-    opacity: 0.85,
-    dashArray: "1 8",
+    color: "#a7f3d0",
+    weight: 2.5,
+    opacity: 0.95,
+    dashArray: "6 6",
     lineCap: "round",
   },
-  down: { color: "#f87171", weight: 2.5, opacity: 0.85, dashArray: "4 6" },
+  down: { color: "#f87171", weight: 3, opacity: 0.95, dashArray: "6 6" },
+};
+/** Paquetes que "viajan" por la ruta hacia el puente (animación CSS). */
+const ROUTE_FLOW: L.PolylineOptions = {
+  color: "#ecfdf5",
+  weight: 2,
+  opacity: 0.9,
+  dashArray: "2 12",
+  lineCap: "round",
+  className: "mesh-route",
 };
 
 export default function MapClient({
@@ -157,12 +173,17 @@ export default function MapClient({
       .sort((a, b) => Number(a.kind === "route") - Number(b.kind === "route"))
       .forEach((l) => {
         if (!pos[l.from] || !pos[l.to]) return;
+        const line = [pos[l.from], pos[l.to]];
         const style = l.down ? LINK_STYLE.down : LINK_STYLE[l.kind];
 
-        L.polyline([pos[l.from], pos[l.to]], {
-          ...style,
+        L.polyline(line, {
+          ...CASING,
+          weight: (style.weight ?? 2) + 3,
           interactive: false,
         }).addTo(layer);
+        L.polyline(line, { ...style, interactive: false }).addTo(layer);
+        if (l.kind === "route" && !l.down)
+          L.polyline(line, { ...ROUTE_FLOW, interactive: false }).addTo(layer);
       });
 
     // Encuadrar las balizas la primera vez que llegan.

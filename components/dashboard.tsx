@@ -7,10 +7,32 @@ import BalizaForm from "./baliza-form";
 import BalizaPopup from "./baliza-popup";
 import CropPicker from "./crop-picker";
 import Map, { MapLink, MapMarkerData } from "./map";
+import MeshLegend from "./mesh-legend";
 import Monitor from "./monitor";
 
 import { Baliza, BalizaCreate, CropInfo } from "@/lib/api";
 import { deviceStatus, useMonitor } from "@/lib/monitor";
+
+/** ¿Pasa el segmento a–b cerca de la baliza c? (distancias en metros) */
+function nearSegment(c: Baliza, a: Baliza, b: Baliza): boolean {
+  const k = Math.cos((Number(a.latitud) * Math.PI) / 180);
+  const xy = (p: Baliza) => [
+    Number(p.longitud) * 111_320 * k,
+    Number(p.latitud) * 110_540,
+  ];
+  const [ax, ay] = xy(a);
+  const [bx, by] = xy(b);
+  const [cx, cy] = xy(c);
+  const dx = bx - ax;
+  const dy = by - ay;
+  const len2 = dx * dx + dy * dy;
+
+  if (len2 === 0) return false;
+  const t = Math.max(0, Math.min(1, ((cx - ax) * dx + (cy - ay) * dy) / len2));
+  const dist = Math.hypot(ax + t * dx - cx, ay + t * dy - cy);
+
+  return dist < Math.max(15, 0.2 * Math.sqrt(len2));
+}
 
 interface DashboardProps {
   initialBalizas: Baliza[];
@@ -41,8 +63,6 @@ export default function Dashboard({
   );
 
   const markers = useMemo<MapMarkerData[]>(() => {
-    const cropsById = Object.fromEntries(crops.map((c) => [c.id, c]));
-
     return balizas.map((b) => {
       const device = devices[b.id];
 
@@ -56,38 +76,48 @@ export default function Dashboard({
         popupHtml: renderToString(
           <BalizaPopup
             baliza={b}
-            crop={b.cultivo_id != null ? cropsById[b.cultivo_id] : undefined}
             device={device}
+            icingaAvailable={monitor.icingaAvailable}
             now={monitor.now}
           />,
         ),
       };
     });
-  }, [balizas, crops, devices, monitor.now]);
+  }, [balizas, devices, monitor.icingaAvailable, monitor.now]);
 
-  // Red mesh: todos los nodos son vecinos en la malla y cada uno tiene una
-  // ruta real hacia el puente que publica sus datos (estado.gateway).
+  // Red mesh: ruta real de cada nodo hacia su puente (estado.gateway) y
+  // enlaces de malla entre nodos. Se omite un enlace de malla si ya lo cubre
+  // una ruta o si pasa por encima de otra baliza (se vería superpuesto).
   const links = useMemo<MapLink[]>(() => {
+    const byId = Object.fromEntries(balizas.map((b) => [b.id, b]));
     const ids = balizas.map((b) => b.id);
     const isDown = (id: string) => deviceStatus(devices[id]) === "down";
+    const gateway = (id: string) => devices[id]?.estado.gateway;
     const out: MapLink[] = [];
 
-    ids.forEach((a, i) =>
-      ids.slice(i + 1).forEach((b) =>
-        out.push({
-          from: a,
-          to: b,
-          kind: "mesh",
-          down: isDown(a) || isDown(b),
-        }),
-      ),
-    );
     ids.forEach((id) => {
-      const gw = devices[id]?.estado.gateway;
+      const gw = gateway(id);
 
-      if (gw && gw !== id && ids.includes(gw))
+      if (gw && gw !== id && byId[gw])
         out.push({ from: id, to: gw, kind: "route", down: isDown(id) });
     });
+
+    ids.forEach((a, i) =>
+      ids.slice(i + 1).forEach((b) => {
+        if (gateway(a) === b || gateway(b) === a) return;
+        const crossesNode = ids.some(
+          (c) => c !== a && c !== b && nearSegment(byId[c], byId[a], byId[b]),
+        );
+
+        if (!crossesNode)
+          out.push({
+            from: a,
+            to: b,
+            kind: "mesh",
+            down: isDown(a) || isDown(b),
+          });
+      }),
+    );
 
     return out;
   }, [balizas, devices]);
@@ -129,6 +159,7 @@ export default function Dashboard({
         zoom={16}
         onMapClick={adding ? (lat, lng) => setNewPoint([lat, lng]) : undefined}
       >
+        <MeshLegend />
         <CropPicker
           crops={crops}
           selected={selectedCrops}
@@ -161,6 +192,7 @@ export default function Dashboard({
         devices={registeredDevices}
         error={monitor.error}
         labels={labels}
+        live={monitor.live}
         now={monitor.now}
         updatedAt={monitor.updatedAt}
       />

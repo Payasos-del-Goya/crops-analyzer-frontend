@@ -197,13 +197,12 @@ body {
   animation: baliza-halo 2.4s ease-out infinite;
 }
 
-/* Rutas de la malla hacia el puente: el trazo "fluye" hacia el puente */
+/* Rutas de la malla: "paquetes" que viajan hacia el puente */
 @keyframes mesh-flow {
-  to { stroke-dashoffset: -24; }
+  to { stroke-dashoffset: -28; }
 }
 .mesh-route {
-  stroke-dasharray: 8 4;
-  animation: mesh-flow 1.2s linear infinite;
+  animation: mesh-flow 1.4s linear infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
