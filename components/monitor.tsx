@@ -5,6 +5,8 @@ interface MonitorProps {
   devices: MonitorDevice[] | null;
   error: boolean;
   updatedAt: Date | null;
+  /** true si llegan por WebSocket (en vivo); false si es sondeo HTTP. */
+  live?: boolean;
   now: number;
   /** id de baliza → label, para mostrar nombres legibles. */
   labels?: Record<string, string>;
@@ -14,6 +16,7 @@ export default function Monitor({
   devices,
   error,
   updatedAt,
+  live = false,
   now,
   labels = {},
 }: MonitorProps) {
@@ -152,7 +155,12 @@ export default function Monitor({
       </div>
 
       <div className="pt-3 border-t border-emerald-950/40 text-[11px] text-zinc-500 flex justify-between items-center">
-        <span>InfluxDB · Icinga2</span>
+        <span>
+          InfluxDB · Icinga2 ·{" "}
+          <span className={live ? "text-emerald-400" : "text-zinc-400"}>
+            {live ? "en vivo" : "cada 30 s"}
+          </span>
+        </span>
         {error ? (
           <span className="text-red-400">Sin conexión</span>
         ) : (

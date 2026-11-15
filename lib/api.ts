@@ -92,13 +92,23 @@ export interface MonitorDevice {
   };
 }
 
-export async function getMonitor(): Promise<MonitorDevice[]> {
+export interface MonitorSnapshot {
+  dispositivos: MonitorDevice[];
+  /** false si el backend no puede leer el estado de Icinga (falta token). */
+  icinga_disponible: boolean;
+}
+
+export async function getMonitor(): Promise<MonitorSnapshot> {
   const res = await fetch(`${CLIENT_API}/monitor`, { cache: "no-store" });
 
   if (!res.ok) throw new Error(`Error ${res.status}`);
 
-  return (
-    ((await res.json()) as { dispositivos?: MonitorDevice[] }).dispositivos ??
-    []
-  );
+  return (await res.json()) as MonitorSnapshot;
+}
+
+/** URL del WebSocket del monitor (pasa por el mismo proxy `/api`). */
+export function monitorSocketUrl(): string {
+  const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
+
+  return `${proto}//${window.location.host}${CLIENT_API}/ws/monitor`;
 }
