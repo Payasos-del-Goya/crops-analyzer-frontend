@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 
 import BalizaForm from "./baliza-form";
-import CropSelector from "./crop-selector";
+import CropPicker from "./crop-picker";
 import Map, { MapMarkerData } from "./map";
 import Monitor from "./monitor";
 
@@ -21,6 +21,7 @@ export default function Dashboard({
   backendError = false,
 }: DashboardProps) {
   const [balizas, setBalizas] = useState<Baliza[]>(initialBalizas);
+  // Hasta 3 cultivos en orden de preferencia.
   // TODO: enviar como parámetro a GET /predictions cuando exista el endpoint.
   const [selectedCrops, setSelectedCrops] = useState<number[]>([]);
   const [adding, setAdding] = useState(false);
@@ -36,6 +37,14 @@ export default function Dashboard({
     [balizas],
   );
 
+  const labels = useMemo(
+    () =>
+      Object.fromEntries(
+        balizas.filter((b) => b.label).map((b) => [b.id, b.label as string]),
+      ),
+    [balizas],
+  );
+
   const closeForm = () => {
     setAdding(false);
     setNewPoint(null);
@@ -48,11 +57,6 @@ export default function Dashboard({
 
   return (
     <section className="flex items-stretch justify-center gap-4 w-full h-[calc(100vh-5rem)] p-4">
-      <CropSelector
-        crops={crops}
-        selected={selectedCrops}
-        onChange={setSelectedCrops}
-      />
       <Map
         center={[41.683298, -0.88442]}
         markers={markers}
@@ -61,8 +65,13 @@ export default function Dashboard({
         zoom={16}
         onMapClick={adding ? (lat, lng) => setNewPoint([lat, lng]) : undefined}
       >
+        <CropPicker
+          crops={crops}
+          selected={selectedCrops}
+          onChange={setSelectedCrops}
+        />
         {backendError && (
-          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[1100] px-3 py-1.5 text-xs rounded-lg bg-red-950/90 text-red-300 border border-red-900">
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[1100] px-3 py-1.5 text-xs rounded-lg bg-red-950/90 text-red-300 border border-red-900">
             No se pudo conectar con el backend
           </div>
         )}
@@ -84,7 +93,7 @@ export default function Dashboard({
           </button>
         )}
       </Map>
-      <Monitor />
+      <Monitor labels={labels} />
     </section>
   );
 }
