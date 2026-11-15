@@ -7,6 +7,7 @@ import { Providers } from "./providers";
 import { siteConfig } from "@/config/site";
 import { fontSans } from "@/config/fonts";
 import { Navbar } from "@/components/navbar";
+import { getSession } from "@/lib/server";
 
 export const metadata: Metadata = {
   title: {
@@ -23,11 +24,13 @@ export const viewport: Viewport = {
   themeColor: [{ color: "#050a05" }],
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const session = await getSession();
+
   return (
     <html suppressHydrationWarning lang="en" className="dark">
       <head>
@@ -46,7 +49,7 @@ export default function RootLayout({
       >
         <Providers themeProps={{ attribute: "class", defaultTheme: "dark", forcedTheme: "dark" }}>
           <div className="relative flex flex-col h-screen">
-            <Navbar />
+            <Navbar session={session} />
             <main className="container flex-grow w-screen">
               {children}
             </main>

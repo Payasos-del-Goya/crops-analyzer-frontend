@@ -73,6 +73,7 @@ export function metrics(d: MonitorDevice): [string, string][] {
     ["Humedad suelo", suelo?.humedad_vol, "%", 0],
     ["CE suelo", suelo?.conductividad, "µS/cm", 0],
     ["Temp. suelo", suelo?.temperatura, "°C", 1],
+    ["pH suelo", suelo?.ph, "", 1],
     ["Lluvia", a.lluvia_mm, "mm", 1],
     ["Batería", e.bateria_v, "V", 2],
     ["Señal", e.rssi, "dBm", 0],
@@ -80,7 +81,10 @@ export function metrics(d: MonitorDevice): [string, string][] {
 
   return out
     .filter(([, v]) => typeof v === "number")
-    .map(([k, v, unit, digits]) => [k, `${v!.toFixed(digits)} ${unit}`]);
+    .map(([k, v, unit, digits]) => [
+      k,
+      `${v!.toFixed(digits)}${unit ? ` ${unit}` : ""}`,
+    ]);
 }
 
 /**

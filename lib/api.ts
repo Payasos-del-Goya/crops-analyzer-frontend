@@ -4,7 +4,21 @@ export interface Baliza {
   longitud: number;
   cultivo_id: number | null;
   label?: string | null;
+  /** soto, vega, terraza, regadio, secano, saladar... */
+  zona?: string | null;
+  textura_suelo?: "arenoso" | "franco" | "arcilloso" | null;
+  altitud_m?: number | string | null;
 }
+
+/** Usuario con sesión iniciada (GET /me). */
+export interface Session {
+  usuario: string;
+  cliente_id: string;
+  nombre: string | null;
+}
+
+/** Cookie de sesión que pone el backend en POST /login. */
+export const SESSION_COOKIE = "crops_session";
 
 export interface CropInfo {
   id: number;
@@ -35,6 +49,29 @@ function errorMessage(body: unknown, status: number): string {
   return `Error ${status}`;
 }
 
+/** Sin sesión (o caducada): a la pantalla de inicio de sesión. */
+function toLogin(res: Response) {
+  if (res.status === 401) window.location.assign("/login");
+}
+
+export async function login(usuario: string, password: string): Promise<void> {
+  const res = await fetch(`${CLIENT_API}/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ usuario, password }),
+  });
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+
+    throw new Error(errorMessage(body, res.status));
+  }
+}
+
+export async function logout(): Promise<void> {
+  await fetch(`${CLIENT_API}/logout`, { method: "POST" }).catch(() => null);
+}
+
 export async function postBaliza(baliza: BalizaCreate): Promise<void> {
   const res = await fetch(`${CLIENT_API}/balizas`, {
     method: "POST",
@@ -42,6 +79,7 @@ export async function postBaliza(baliza: BalizaCreate): Promise<void> {
     body: JSON.stringify(baliza),
   });
 
+  toLogin(res);
   if (!res.ok) {
     const body = await res.json().catch(() => null);
 
@@ -55,6 +93,7 @@ export interface SondaSuelo {
   humedad_vol?: number;
   conductividad?: number;
   temperatura?: number;
+  ph?: number;
 }
 
 /** Última lectura de una baliza (GET /monitor). */
@@ -101,6 +140,7 @@ export interface MonitorSnapshot {
 export async function getMonitor(): Promise<MonitorSnapshot> {
   const res = await fetch(`${CLIENT_API}/monitor`, { cache: "no-store" });
 
+  toLogin(res);
   if (!res.ok) throw new Error(`Error ${res.status}`);
 
   return (await res.json()) as MonitorSnapshot;
