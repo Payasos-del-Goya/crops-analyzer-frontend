@@ -32,7 +32,10 @@ export default function Monitor({
       (x, y) =>
         Number(y.status === "down") - Number(x.status === "down") ||
         Number(y.online) - Number(x.online) ||
-        x.d.dispositivo.localeCompare(y.d.dispositivo),
+        Number(!!labels[y.d.dispositivo]) - Number(!!labels[x.d.dispositivo]) ||
+        (labels[x.d.dispositivo] || x.d.dispositivo).localeCompare(
+          labels[y.d.dispositivo] || y.d.dispositivo,
+        ),
     );
   const onlineCount = rows.filter((r) => r.online).length;
   const downCount = rows.filter((r) => r.status === "down").length;
@@ -100,9 +103,16 @@ export default function Monitor({
                           : "bg-zinc-600"
                     }`}
                   />
-                  <span className="truncate text-sm font-semibold text-zinc-200">
-                    {labels[d.dispositivo] || d.dispositivo}
-                  </span>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold leading-tight text-zinc-100">
+                      {labels[d.dispositivo] || d.dispositivo}
+                    </p>
+                    {labels[d.dispositivo] && (
+                      <p className="truncate text-[10px] font-mono text-zinc-400">
+                        {d.dispositivo}
+                      </p>
+                    )}
+                  </div>
                   {down && (
                     <span className="px-1.5 rounded text-[10px] font-bold bg-red-500 text-white">
                       DOWN

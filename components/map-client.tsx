@@ -4,7 +4,11 @@ import { useEffect, useRef } from "react";
 import { renderToString } from "react-dom/server";
 import L from "leaflet";
 
-import MapMarkerComponent, { MarkerVariant } from "./map-marker";
+import MapMarkerComponent, {
+  MARKER_SIZE,
+  MarkerRole,
+  MarkerVariant,
+} from "./map-marker";
 
 export interface MapMarkerData {
   /** Identificador estable: permite mantener abierto su popup al refrescar. */
@@ -14,14 +18,23 @@ export interface MapMarkerData {
   label?: string;
   popupHtml?: string;
   variant?: MarkerVariant;
+  role?: MarkerRole;
+}
+
+/** Enlace de la red mesh entre dos marcadores (por id). */
+export interface MapLink {
+  from: string;
+  to: string;
+  /** route: camino real hacia el puente; mesh: vecinos en la malla. */
+  kind: "route" | "mesh";
+  down?: boolean;
 }
 
 export interface MapClientProps {
   center?: [number, number];
   zoom?: number;
   markers?: MapMarkerData[];
-  showPolygon?: boolean;
-  polygonColor?: string;
+  links?: MapLink[];
   className?: string;
   /** Punto provisional (p. ej. la baliza que se está dando de alta). */
   pendingPoint?: [number, number] | null;
@@ -30,24 +43,39 @@ export interface MapClientProps {
   onMapClick?: (lat: number, lng: number) => void;
 }
 
-function markerIcon(label?: string, variant: MarkerVariant = "ok") {
+function markerIcon(
+  label?: string,
+  variant: MarkerVariant = "ok",
+  role: MarkerRole = "nodo",
+) {
   return L.divIcon({
     html: renderToString(
-      <MapMarkerComponent label={label} variant={variant} />,
+      <MapMarkerComponent label={label} role={role} variant={variant} />,
     ),
     className: "",
-    iconSize: [32, 48],
-    iconAnchor: [16, 48],
-    popupAnchor: [0, -48],
+    iconSize: [MARKER_SIZE, MARKER_SIZE],
+    iconAnchor: [MARKER_SIZE / 2, MARKER_SIZE / 2],
+    popupAnchor: [0, -MARKER_SIZE / 2],
   });
 }
+
+const LINK_STYLE: Record<string, L.PolylineOptions> = {
+  route: { color: "#34d399", weight: 3, opacity: 0.9, className: "mesh-route" },
+  mesh: {
+    color: "#d1fae5",
+    weight: 3,
+    opacity: 0.85,
+    dashArray: "1 8",
+    lineCap: "round",
+  },
+  down: { color: "#f87171", weight: 2.5, opacity: 0.85, dashArray: "4 6" },
+};
 
 export default function MapClient({
   center = [41.683298, -0.88442],
   zoom = 17,
   markers = [],
-  showPolygon = true,
-  polygonColor = "#22c55e",
+  links = [],
   className = "",
   pendingPoint = null,
   picking = false,
@@ -60,6 +88,7 @@ export default function MapClient({
   // Popup abierto, para reabrirlo cuando los marcadores se redibujan.
   const openPopupIdRef = useRef<string | null>(null);
   const redrawingRef = useRef(false);
+  const fittedRef = useRef(false);
 
   onMapClickRef.current = onMapClick;
 
@@ -108,7 +137,7 @@ export default function MapClient({
     };
   }, []);
 
-  // Redibujar marcadores/polígono cuando cambian.
+  // Redibujar marcadores y enlaces de la malla cuando cambian.
   useEffect(() => {
     const layer = layerRef.current;
 
@@ -119,21 +148,35 @@ export default function MapClient({
     layer.clearLayers();
     redrawingRef.current = false;
 
-    if (showPolygon && markers.length >= 3) {
-      L.polygon(
-        markers.map((m) => [m.lat, m.lng] as L.LatLngTuple),
-        {
-          color: polygonColor,
-          weight: 2,
-          fillColor: polygonColor,
-          fillOpacity: 0.25,
-        },
-      ).addTo(layer);
+    const pos = Object.fromEntries(
+      markers.filter((m) => m.id).map((m) => [m.id, [m.lat, m.lng]]),
+    ) as Record<string, L.LatLngTuple>;
+
+    // Primero la malla y luego las rutas, para que queden por encima.
+    [...links]
+      .sort((a, b) => Number(a.kind === "route") - Number(b.kind === "route"))
+      .forEach((l) => {
+        if (!pos[l.from] || !pos[l.to]) return;
+        const style = l.down ? LINK_STYLE.down : LINK_STYLE[l.kind];
+
+        L.polyline([pos[l.from], pos[l.to]], {
+          ...style,
+          interactive: false,
+        }).addTo(layer);
+      });
+
+    // Encuadrar las balizas la primera vez que llegan.
+    if (!fittedRef.current && markers.length > 0 && mapRef.current) {
+      fittedRef.current = true;
+      mapRef.current.fitBounds(
+        L.latLngBounds(markers.map((m) => [m.lat, m.lng] as L.LatLngTuple)),
+        { padding: [80, 80], maxZoom: 19 },
+      );
     }
 
     markers.forEach((m) => {
       const marker = L.marker([m.lat, m.lng], {
-        icon: markerIcon(m.label, m.variant),
+        icon: markerIcon(m.label, m.variant, m.role),
         zIndexOffset: m.variant === "down" ? 1000 : 0,
       }).addTo(layer);
 
@@ -152,7 +195,7 @@ export default function MapClient({
         interactive: false,
       }).addTo(layer);
     }
-  }, [markers, pendingPoint, showPolygon, polygonColor]);
+  }, [markers, links, pendingPoint]);
 
   useEffect(() => {
     const el = mapRef.current?.getContainer();
