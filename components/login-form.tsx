@@ -60,7 +60,7 @@ export default function LoginForm() {
       </label>
       {error && <p className="text-xs text-red-400">{error}</p>}
       <button
-        className="px-3 py-2 text-sm font-semibold rounded-lg bg-emerald-600 text-white hover:bg-emerald-500 disabled:opacity-60"
+        className="px-3 py-2 text-sm font-semibold rounded-lg bg-emerald-600 text-white hover:bg-emerald-500 disabled:opacity-60 hover:cursor-pointer"
         disabled={sending}
         type="submit"
       >
